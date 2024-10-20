@@ -1,7 +1,7 @@
 #clean the R Environment
 rm(list = ls())
 #set working directory
-#setwd("~Downloads")
+setwd("~Downloads")
 #upload the dataset
 data = read.csv("dataset_tutorial.csv", sep =",", stringsAsFactors = T, header = T)
 #check 

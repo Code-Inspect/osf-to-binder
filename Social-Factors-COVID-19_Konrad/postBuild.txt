@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Ensure all dependencies are installed
+R -e "if (!requireNamespace('devtools', quietly=TRUE)) install.packages('devtools')"
+R -e "devtools::install_deps()"
+
+# Make run_tutorial.R executable (if necessary)
+chmod +x run_tutorial.R
+
+# Run the R script to download the dataset
+Rscript run_tutorial.R
+
+# (Optional) Print a message to confirm that postBuild is completed
+echo "postBuild script finished running."

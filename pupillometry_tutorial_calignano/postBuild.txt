@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Download the dataset from OSF
+wget -O dataset_tutorial.csv https://osf.io/6ke4y/download
+
+# Print message indicating completion of the setup
+echo "Dataset downloaded successfully!"
+
+# Add any additional bash commands needed for setup here

@@ -1,0 +1,3 @@
+#!/bin/bash
+# Download the dataset
+wget -O StadyL_Study2.sav https://osf.io/845et/download

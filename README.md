@@ -27,7 +27,7 @@ These containers allow the original code to be run without modification, ensurin
 
 | **File Name**                           | **Reproducibility Status** | **Issue/Obstacle**                                                                                                             |
 |-----------------------------------------|----------------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| `stadyl_analyses.R`                     | <span style="color: red;">Not Reproducible</span>            | Dataset path is local and not accessible in Binder.                                                                            |
+| `stadyl_analyses.R`                     | $\textcolor{red}{\textsf{Not Reproducible}}$                 | Dataset path is local and not accessible in Binder.                                                                            |
 | `Social_Factors_COVID-19_Konrad.R`      | <span style="color: red;">Not Reproducible</span>            | Script errors due to title and author lines not commented out.                                                                  |
 | `pupillometry_tutorial_calignano.R`     | <span style="color: red;">Not Reproducible</span>            | Dataset path is local and the dataset is not programmatically downloaded.                                                      |
 | `Analysis Post-PAP.R`                   | <span style="color: red;">Not Reproducible</span>            | Dataset path is local and not available on OSF.                                                                                |

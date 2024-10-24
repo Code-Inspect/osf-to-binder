@@ -45,3 +45,5 @@ These containers allow the original code to be run without modification, ensurin
 - test red
 ```
 
+#### $\textcolor{red}{\textsf{Color test 2 .}}$
+

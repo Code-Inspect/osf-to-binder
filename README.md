@@ -28,12 +28,15 @@ These containers allow the original code to be run without modification, ensurin
 | **File Name**                           | **Reproducibility Status** | **Issue/Obstacle**                                                                                                             |
 |-----------------------------------------|----------------------------|--------------------------------------------------------------------------------------------------------------------------------|
 | `stadyl_analyses.R`                     | <span style="color: red;">Not Reproducible</span>            | Dataset path is local and not accessible in Binder.                                                                            |
-| `Social_Factors_COVID-19_Konrad.R`      | <span style="color: red;">Not Reproducible</span>            | Script errors due to title and author lines not commented out.                                                                 |
+| `Social_Factors_COVID-19_Konrad.R`      | <span style="color: red;">Not Reproducible</span>            | Script errors due to title and author lines not commented out.                                                                  |
 | `pupillometry_tutorial_calignano.R`     | <span style="color: red;">Not Reproducible</span>            | Dataset path is local and the dataset is not programmatically downloaded.                                                      |
 | `Analysis Post-PAP.R`                   | <span style="color: red;">Not Reproducible</span>            | Dataset path is local and not available on OSF.                                                                                |
-| `SRMA2019_analyses.R`                   | <span style="color: yellow;">Partial Reproducible</span>   |   Histogram not possible.                                                         |
-| `hadza_returns_model.R`                 | <span style="color: red;">Not Reproducible</span>            | Dataset unavailable on OSF.                                                                                                    |
-| `stuart.R`                              | <span style="color: red;">Not Reproducible</span>            | Dataset unavailable on OSF.                                                                                                    |
+| `SRMA2019_analyses.R`                   | <span style="color: yellow;">Partial Reproducible</span>     | Histogram not possible.                                                                                                            |
+| `hadza_returns_model.R`                 | <span style="color: red;">Not Reproducible</span>            | Dataset unavailable on OSF.                                                                                                        |
+| `stuart.R`                              | <span style="color: red;">Not Reproducible</span>            | Dataset unavailable on OSF.                                                                                                        |
+| ` Psi.PS.AR.Matrix.R`                   | <span style="color: red;">Not Reproducible</span>            | Difficulties while crating the binder container.                                                                                |
+| `Rcode_Figure2.R`                       | <span style="color: green;">Reproducible</span>              |
+                                                                                                 |
 
 
 

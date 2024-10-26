@@ -27,18 +27,19 @@ These containers allow the original code to be run without modification, ensurin
 
 | **File Name**                           | **Reproducibility Status** | **Issue/Obstacle**                                                                                                             |
 |-----------------------------------------|----------------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| `stadyl_analyses.R`                     | $\textcolor{red}{\textsf{Not Reproducible}}$                 | Dataset path is local and not accessible in Binder.                                                                            |
-| `Social_Factors_COVID-19_Konrad.R`      | <span style="color: red;">Not Reproducible</span>            | Script errors due to title and author lines not commented out.                                                                  |
-| `pupillometry_tutorial_calignano.R`     | <span style="color: red;">Not Reproducible</span>            | Dataset path is local and the dataset is not programmatically downloaded.                                                      |
-| `Analysis Post-PAP.R`                   | <span style="color: red;">Not Reproducible</span>            | Dataset path is local and not available on OSF.                                                                                |
-| `SRMA2019_analyses.R`                   | <span style="color: yellow;">Partial Reproducible</span>     | Histogram not possible.                                                                                                            |
-| `hadza_returns_model.R`                 | <span style="color: red;">Not Reproducible</span>            | Dataset unavailable on OSF.                                                                                                        |
-| `stuart.R`                              | <span style="color: red;">Not Reproducible</span>            | Dataset unavailable on OSF.                                                                                                        |
-| ` Psi.PS.AR.Matrix.R`                   | <span style="color: red;">Not Reproducible</span>            | Difficulties while crating the binder container.                                                                                |
-| `Rcode_Figure2.R`                       | <span style="color: green;">Reproducible</span>              |
-                                                                                                 |
-|`Exp1-LBA-null`                          | 
-|`Collaboration boosts career progression_part 1.R` | 
+| `stadyl_analyses.R`                     | $\textcolor{red}{\textsf{Not Reproducible}}$             | Dataset path is local and not accessible in Binder.                                                                        |
+| `Social_Factors_COVID-19_Konrad.R`      | $\textcolor{red}{\textsf{Not Reproducible}}$             | Script errors due to title and author lines not commented out.                                                                     |
+| `pupillometry_tutorial_calignano.R`     | $\textcolor{red}{\textsf{Not Reproducible}}$             | Dataset path is local and the dataset is not programmatically downloaded.                                                          |
+| `Analysis Post-PAP.R`                   | $\textcolor{red}{\textsf{Not Reproducible}}$             | Dataset path is local and not available on OSF.                                                                            |
+| `SRMA2019_analyses.R`                   | $\textcolor{yellow}{\textsf{Partially Reproducible}}$   | Histogram not possible.                                                                                                            |
+| `hadza_returns_model.R`                 | $\textcolor{red}{\textsf{Not Reproducible}}$             | Dataset unavailable on OSF.                                                                                                        |
+| `stuart.R`                              | $\textcolor{red}{\textsf{Not Reproducible}}$             | Dataset unavailable on OSF.                                                                                                        |
+| ` Psi.PS.AR.Matrix.R`                   | $\textcolor{red}{\textsf{Not Reproducible}}$             | Difficulties while crating the binder container.                                                                                   |
+| `Rcode_Figure2.R`                       | $\textcolor{green}{\textsf{Not Reproducible}}$           | No issues.                                                                                                                         |
+| `Exp1-LBA-null`                         | $\textcolor{red}{\textsf{Not Reproducible}}$             | The function pmwgs is not found. This could be because the required package for pmwgs is missing or not installed properly.       
+|`Collaboration boosts career progression_part 1.R` | | |
+|'Cultural Diversity in Unequal Societies Sustained Through Cross-Cultural Competence'| $\textcolor{green}{\textsf{Not Reproducible}}$  |  
+
 
 
 ```diff

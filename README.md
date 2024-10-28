@@ -38,7 +38,9 @@ These containers allow the original code to be run without modification, ensurin
 | 9                 | Ongoing and future challenges of the network approach to psychopathology: From theoretical conjectures to clinical translations | $\textcolor{green}{\textsf{Reproducible}}$   | No issues.                                                                                         |
 | 10                | Speed-Accuracy Tradeoffs In Decision Making: Perception Shifts And Goal Activation Bias Decision Thresholds  | $\textcolor{red}{\textsf{Not Reproducible}}$   | The function pmwgs is not found. This could be because the required package for pmwgs is missing or not installed properly.    |                                                                                                          
 | 11                | Data and R code for: "Collaboration enhances career progression in academic science, especially for female researchers" | $\textcolor{red}{\textsf{Not Reproducible}}$ | The package r-egonet is not available in the current channels. Additionally, bibliometrix package installation is failing in Binder.   |                                                                                                                          
-| 12                | 'Cultural Diversity in Unequal Societies Sustained Through Cross-Cultural Competence'| $\textcolor{green}{\textsf{Reproducible}}$ | No issues. | 
+| 12                | 'Cultural Diversity in Unequal Societies Sustained Through Cross-Cultural Competence'| $\textcolor{green}{\textsf{Reproducible}}$ | No issues. |
+| 13       | The influence of verb tense on mental simulation during literary reading | $\textcolor{red}{\textsf{Not Reproducible}}$ | Datasets are available but the script is attempting to load them from a local path, making it not reproducible in Binder. |
+
                                                                                                                
                                                                                                                                      
 

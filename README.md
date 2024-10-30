@@ -52,6 +52,10 @@ These containers allow the original code to be run without modification, ensurin
 | 23             | [Do moral messages increase cooperation? Code and Data](https://github.com/Meet261/23_-Do-moral-messages-increase-cooperation-Code-and-Data) | $\textcolor{green}{\textsf{Reproducible}}$                 | No issue.       |
 | 24             | [Social inequalities and loneliness as predictors of ageing well](https://github.com/Meet261/24_Social-inequalities-and-loneliness-as-predictors-of-ageing-well) | $\textcolor{red}{Not\ Reproducible}$             | Error in `.reconstruct_focal_terms(terms, model)`: object 'model3' not found.       |
 | 25             | [Open Science in Marketing](https://github.com/Meet261/25_Open-Science-in-Marketing) | $\textcolor{green}{\textsf{Reproducible}}$               | No issue.       |
+| 26             | [VADIS -- Variation-based distance and similarity modeling](https://github.com/Meet261/26_-VADIS----Variation-based-distance-and-similarity-modeling) | $\textcolor{red}{\textsf{Not Reproducible}}$  | The script fails because the `tidyverse` package cannot load due to a missing shared object (`libicui18n.so.58`). The missing library (`libicu`) is not available in the current conda channels. |
+| 27             | [Impact of information presentation on interpretability of spatial hazard information: Lessons from a study in avalanche safety---Data and Code](https://github.com/Meet261/27_Impact-of-information-presentation-on-interpretability-of-spatial-hazard-information) | $\textcolor{green}{\textsf{Reproducible}}$ | No issue.    |
+
+
 
 
 

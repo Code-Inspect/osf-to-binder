@@ -54,6 +54,9 @@ These containers allow the original code to be run without modification, ensurin
 | 25             | [Open Science in Marketing](https://github.com/Meet261/25_Open-Science-in-Marketing) | $\textcolor{green}{\textsf{Reproducible}}$               | No issue.       |
 | 26             | [VADIS -- Variation-based distance and similarity modeling](https://github.com/Meet261/26_-VADIS----Variation-based-distance-and-similarity-modeling) | $\textcolor{red}{\textsf{Not Reproducible}}$  | The script fails because the `tidyverse` package cannot load due to a missing shared object (`libicui18n.so.58`). The missing library (`libicu`) is not available in the current conda channels. |
 | 27             | [Impact of information presentation on interpretability of spatial hazard information: Lessons from a study in avalanche safety---Data and Code](https://github.com/Meet261/27_Impact-of-information-presentation-on-interpretability-of-spatial-hazard-information) | $\textcolor{green}{\textsf{Reproducible}}$ | No issue.    |
+| 28             | [Consistent metacommunity structure despite inconsistent drivers of assembly at the continental scale](https://github.com/Meet261/28_Consistent-metacommunity-structure-despite-inconsistent-drivers-of-assembly) | $\textcolor{red}{\textsf{Not Reproducible}}$ | The `ggsn` package failed to load due to a missing shared object file (`stringi.so`). The error was related to `libicui18n.so.58`, which could not be found. |
+| 29             | [Do moral messages increase cooperation? Code and Data](https://github.com/Meet261/29_Do-moral-messages-increase-cooperation-Code-and-Data) |  $\textcolor{red}{\textsf{Not Reproducible}}$  | The `rethinking` package installation failed due to compatibility issues. Specifically, the `MASS` and `cmdstanr` packages could not be installed. |
+
 
 
 

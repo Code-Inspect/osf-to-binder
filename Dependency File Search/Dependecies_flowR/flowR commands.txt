@@ -1,0 +1,10 @@
+Assuming mount directory as: /Users/lorrainesaju/flowR
+
+Run flowR: docker run -it --rm -v /Users/lorrainesaju/flowR:/data eagleoutice/flowr
+
+Run flowR as server: docker run -p 1042:1042 -it --rm -v /Users/lorrainesaju/flowR:/data eagleoutice/flowr --server
+
+Dependency query in REPL: :query "[{ \"type\": \"dependencies\" }]' file:///data/example_script.R
+:quit to exit REPL
+
+:query* "[{ \"type\": \"dependencies\" }]' file:///data/example_script.R

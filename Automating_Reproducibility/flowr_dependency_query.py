@@ -2,13 +2,16 @@ import json
 import re
 import os
 import subprocess
+import sys
+import argparse
+from utils import log_message
+
 
 def parse_flowr_output(raw_output):
     """Parses the raw output from flowR to extract dependencies."""
     if "exit" in raw_output:
         raw_output = raw_output.split("exit", 1)[1].strip()
 
-    # Extract JSON part
     json_match = re.search(r'({.*})', raw_output, re.DOTALL)
     if not json_match:
         print("No valid JSON found in the output.")
@@ -16,40 +19,36 @@ def parse_flowr_output(raw_output):
 
     json_str = json_match.group(1)
 
-    # Parse JSON
     try:
         dependencies = json.loads(json_str)
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON: {e}")
         return None
 
-    # Extract relevant data
     result = {
         "libraries": [
             lib["libraryName"] for lib in dependencies.get("dependencies", {}).get("libraries", [])
         ],
         "sourcedFiles": [
-            file["file"] for file in dependencies.get("dependencies", {}).get("sourcedFiles", [])
+            file.get("file") for file in dependencies.get("dependencies", {}).get("sourcedFiles", [])
         ],
         "readData": [
-            data["source"] for data in dependencies.get("dependencies", {}).get("readData", [])
+            data.get("source") for data in dependencies.get("dependencies", {}).get("readData", [])
         ],
         "writtenData": [
-            data["destination"] for data in dependencies.get("dependencies", {}).get("writtenData", [])
+            data.get("destination") for data in dependencies.get("dependencies", {}).get("writtenData", [])
         ],
     }
-
     return result
 
-def run_docker_flowr(query, file_path):
+def run_docker_flowr(query, file_path, project_path):
     """Runs the Docker flowR query for a given R file."""
     docker_command = [
         "docker", "run", "-i", "--rm",
-        "-v", "/data/meet/pipeline/hzncs:/data",
+        "-v", f"{project_path}:/data",
         "eagleoutice/flowr"
     ]
 
-    # Adjust file path for the Docker container
     container_file_path = f"/data/{file_path}"
 
     query_command = f':query* "[{{ \\"type\\": \\"{query}\\" }}]" file://{container_file_path}'
@@ -78,10 +77,9 @@ def aggregate_dependencies(project_path):
     for root, _, files in os.walk(project_path):
         for file in files:
             if file.endswith(".R"):
-                # Adjust file path relative to the project root
                 relative_file_path = os.path.relpath(os.path.join(root, file), project_path)
                 print(f"Processing {relative_file_path}...")
-                raw_output = run_docker_flowr("dependencies", relative_file_path)
+                raw_output = run_docker_flowr("dependencies", relative_file_path, project_path)
                 if raw_output:
                     parsed_deps = parse_flowr_output(raw_output)
                     if parsed_deps:
@@ -91,11 +89,10 @@ def aggregate_dependencies(project_path):
                         dependencies["writtenData"].update(parsed_deps["writtenData"])
     return dependencies
 
-def generate_requirements_file(dependencies, output_file="dependencies.txt"):
+def generate_requirements_file(dependencies, output_file):
     """Generates a dependencies file for a project."""
-    if not dependencies:
-        print("No dependencies to write.")
-        return
+    output_dir = os.path.dirname(output_file)
+    os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
 
     with open(output_file, "w") as f:
         f.write("# R libraries\n")
@@ -119,13 +116,21 @@ def generate_requirements_file(dependencies, output_file="dependencies.txt"):
 
     print(f"Dependencies file created: {output_file}")
 
-# Main execution flow
-def process_project(project_path, output_file="dependencies.txt"):
-    """Processes a single project to generate a dependencies file."""
-    dependencies = aggregate_dependencies(project_path)
+def process_project(input_dir, output_file):
+    """Processes a project to generate a dependencies file."""
+    dependencies = aggregate_dependencies(input_dir)
     generate_requirements_file(dependencies, output_file)
+    
 
-# Example: Process a single project directory
-project_path = "/data/meet/pipeline/hzncs"
-output_file = os.path.join(project_path, "dependencies.txt")
-process_project(project_path, output_file)
+# Main execution flow
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="FlowR Dependency Extractor")
+    parser.add_argument("--input-dir", required=True, help="Input directory of the project")
+    parser.add_argument("--output-file", required=True, help="Output file to save dependencies")
+
+    args = parser.parse_args()
+
+    print(f"Processing project: {args.input_dir}")
+    process_project(args.input_dir, args.output_file)
+
+    print("\nProject processed successfully.")

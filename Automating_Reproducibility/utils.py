@@ -2,6 +2,8 @@
 import os
 from datetime import datetime
 
+BASE_DIR = "Automating_Reproducibility"
+
 def log_message(project_id, section, message):
     """
     Logs messages to execution_log.txt with timestamps and structured sections.
@@ -11,7 +13,7 @@ def log_message(project_id, section, message):
     - section (str): The section name (e.g., "CONTAINER BUILD", "R EXECUTION").
     - message (str): The message to log (e.g., success or error message).
     """
-    log_file = os.path.join("/data/meet/pipeline", project_id, "execution_log.txt")
+    log_file = os.path.join(BASE_DIR, project_id, "execution_log.txt")
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # Ensure the log file directory exists

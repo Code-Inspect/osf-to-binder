@@ -1,10 +1,8 @@
 import os
 import subprocess
 import sys
-from utils import log_message
+from utils import log_message, BASE_DIR
 
-
-BASE_DIR = "/data/meet"
 
 def list_files(container_name, directory, extensions):
     """Lists files with specific extensions in a given directory of the container."""
@@ -61,7 +59,7 @@ def render_rmd_file(container_name, rmd_file, log_file):
 def run_all_files_in_container(project_id):
     """Automates the process of running R and Rmd files inside the container."""
     container_name = f"repo2docker-{project_id}"
-    log_file = os.path.join(BASE_DIR, "pipeline", project_id, "execution_log.txt")
+    log_file = os.path.join(BASE_DIR, project_id, "execution_log.txt")
 
     # Ensure the container is running
     try:

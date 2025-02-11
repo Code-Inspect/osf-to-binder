@@ -58,7 +58,7 @@ def build_and_run_container(project_id, repo_only=False, build_and_run=False):
         run_command = [
             "docker", "run", "-d",
             "--name", container_name,
-            "-v", f"{os.path.join(BASE_DIR, project_id)}:/data",
+            "-v", f"{os.path.abspath(os.path.join(BASE_DIR, project_id))}:/data",
             image_name
         ]
 

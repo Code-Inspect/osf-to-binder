@@ -43,9 +43,12 @@ def parse_flowr_output(raw_output):
 
 def run_docker_flowr(query, file_path, project_path):
     """Runs the Docker flowR query for a given R file."""
+    abs_project_path = os.path.abspath(project_path)  # Ensure absolute path
+    abs_file_path = os.path.abspath(file_path)  # Ensure absolute file path
+
     docker_command = [
         "docker", "run", "-i", "--rm",
-        "-v", f"{project_path}:/data",
+        "-v", f"{abs_project_path}:/data",  # Use absolute path for mounting
         "eagleoutice/flowr"
     ]
 

@@ -4,8 +4,8 @@ import subprocess
 import requests
 from git import Repo
 import time
+from osfclient.api import OSF
 from utils import log_message, BASE_DIR
-
 
 def run_flowr_dependency_query(project_path):
     """Extract dependencies using flowr_dependency_query.py."""
@@ -49,10 +49,6 @@ def download_folder(folder, download_path):
 
     for subfolder in folder.folders:
         download_folder(subfolder, folder_path)
-
-import time
-from osfclient.api import OSF
-import requests
 
 def download_project(project_id, download_directory):
     osf = OSF()

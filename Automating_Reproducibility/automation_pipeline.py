@@ -4,17 +4,15 @@ import subprocess
 import requests
 from git import Repo
 import time
-from utils import log_message
-
-
-BASE_DIR = "/data/meet/pipeline"
+from osfclient.api import OSF
+from utils import log_message, BASE_DIR
 
 def run_flowr_dependency_query(project_path):
     """Extract dependencies using flowr_dependency_query.py."""
     dependency_file = os.path.join(project_path, "dependencies.txt")
     print(f"Running flowr_dependency_query.py for {project_path}...")
 
-    script_path = "/data/meet/pipeline/flowr_dependency_query.py"
+    script_path = f"{BASE_DIR}/flowr_dependency_query.py"
     command = [
         "uv", "run", "python3", script_path,
         "--input-dir", project_path,
@@ -51,10 +49,6 @@ def download_folder(folder, download_path):
 
     for subfolder in folder.folders:
         download_folder(subfolder, folder_path)
-
-import time
-from osfclient.api import OSF
-import requests
 
 def download_project(project_id, download_directory):
     osf = OSF()
@@ -112,13 +106,9 @@ def create_github_repo(repo_name):
         print(f"Failed to create GitHub repository: {response.json()}")
         sys.exit(1)
 
-def create_repo2docker_files(project_dir, project_id):
+def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
     repo_name = f"osf_{project_id}"
-    github_repo_url = f"https://github.com/Meet261/{repo_name}.git"
-
-    # Create GitHub repository
-    create_github_repo(repo_name)
-
+    
     repo2docker_path = os.path.join(project_dir, "repo2docker")
     os.makedirs(repo2docker_path, exist_ok=True)
 
@@ -208,21 +198,27 @@ def create_repo2docker_files(project_dir, project_id):
         readme.write(f"docker run -p 8888:8888 --name {repo_name} -d {repo_name}\n")
         readme.write("```\n")
 
-    # Initialize Git repository and push to GitHub
-    print(f"Initializing Git repository for {repo2docker_path}...")
-    repo = Repo.init(repo2docker_path)
-    if "origin" not in [remote.name for remote in repo.remotes]:
-        repo.create_remote("origin", github_repo_url)
+    if add_github_repo:
+        # Initialize Git repository and push to GitHub
+        github_repo_url = f"https://github.com/Meet261/{repo_name}.git"
 
-    try:
-        repo.git.add(all=True)
-        repo.index.commit("Initial commit for repo2docker project")
-        repo.git.checkout("-B", "main")
-        repo.remotes.origin.push(refspec="main:main", force=True)
-        print(f"Repo2docker files created and pushed to {github_repo_url}.")
-    except Exception as e:
-        print(f"Error pushing to GitHub: {e}")
-        sys.exit(1)
+        # Create GitHub repository
+        create_github_repo(repo_name)
+
+        print(f"Initializing Git repository for {repo2docker_path}...")
+        repo = Repo.init(repo2docker_path)
+        if "origin" not in [remote.name for remote in repo.remotes]:
+            repo.create_remote("origin", github_repo_url)
+
+        try:
+            repo.git.add(all=True)
+            repo.index.commit("Initial commit for repo2docker project")
+            repo.git.checkout("-B", "main")
+            repo.remotes.origin.push(refspec="main:main", force=True)
+            print(f"Repo2docker files created and pushed to {github_repo_url}.")
+        except Exception as e:
+            print(f"Error pushing to GitHub: {e}")
+            sys.exit(1)
 
 def process_project(project_id):
     try:

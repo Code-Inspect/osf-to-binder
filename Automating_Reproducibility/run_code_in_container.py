@@ -3,14 +3,11 @@ import subprocess
 import sys
 import argparse
 from git import Repo
-from utils import log_message
-
-
-BASE_DIR = "/data/meet"
+from utils import log_message, BASE_DIR
 
 def build_and_run_container(project_id, repo_only=False, build_and_run=False):
     """Builds and runs the repo2docker container for a project."""
-    project_path = os.path.join(BASE_DIR, "pipeline", project_id, "repo2docker")
+    project_path = os.path.join(BASE_DIR, project_id, "repo2docker")
     if not os.path.exists(project_path):
         print(f"❌ Error: Repo2docker directory for project '{project_id}' not found at '{project_path}'")
         return None
@@ -61,7 +58,7 @@ def build_and_run_container(project_id, repo_only=False, build_and_run=False):
         run_command = [
             "docker", "run", "-d",
             "--name", container_name,
-            "-v", f"{os.path.join(BASE_DIR, 'pipeline', project_id)}:/data",
+            "-v", f"{os.path.abspath(os.path.join(BASE_DIR, project_id))}:/data",
             image_name
         ]
 

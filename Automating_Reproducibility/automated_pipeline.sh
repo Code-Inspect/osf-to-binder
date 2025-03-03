@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Base directory
-BASE_DIR="/data/meet/pipeline"
+BASE_DIR="Automating_Reproducibility"
 
 # Python script paths
 PIPELINE_SCRIPT="$BASE_DIR/automation_pipeline.py"
@@ -17,8 +17,8 @@ clean_docker() {
 
 run_pipeline() {
     local PROJECT_ID=$1
-    echo "Running Python pipeline for project ID: $PROJECT_ID"
-    python3 "$PIPELINE_SCRIPT" --project-id "$PROJECT_ID"
+    echo "Running Python script $PIPELINE_SCRIPT for project ID: $PROJECT_ID"
+    python3 "$PIPELINE_SCRIPT" "$PROJECT_ID"
     if [ $? -ne 0 ]; then
         echo "❌ Error: Pipeline execution failed for project '$PROJECT_ID'."
         exit 1
@@ -70,8 +70,9 @@ fi
 
 # Set up environment with uv
 echo "Setting up the environment using uv..."
-cd "$BASE_DIR" || exit
+# cd "$BASE_DIR" || exit
 uv sync || { echo "Error: Failed to sync environment using uv."; exit 1; }
+source .venv/bin/activate
 
 # Check if the argument is a file or a single project ID
 INPUT=$1

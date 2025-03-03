@@ -1,2 +1,4 @@
 Automating_Reproducibility/*/
 __pycache__
+test
+*.zip

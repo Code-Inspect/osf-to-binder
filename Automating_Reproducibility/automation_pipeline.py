@@ -6,7 +6,7 @@ from git import Repo
 import time
 from osfclient.api import OSF
 from utils import log_message, BASE_DIR
-
+import zipfile
 def run_flowr_dependency_query(project_path):
     """Extract dependencies using flowr_dependency_query.py."""
     dependency_file = os.path.join(project_path, "dependencies.txt")
@@ -103,6 +103,24 @@ def download_project(project_id, download_directory):
     print("✅ Project download completed.")
     return project_path
 
+
+def unzip_project(project_id, download_directory):
+    """Unzips a project from the download directory to the base directory."""
+    zip_file = os.path.join("downloads", f"{project_id}.zip")
+    extracted_path = os.path.join(download_directory, project_id)
+    repo2docker_path = os.path.join(extracted_path, "repo2docker")
+
+    # **Skip download if the project already exists**
+    if os.path.exists(repo2docker_path):
+        print(f"⏭️ Project '{project_id}' already exists at {repo2docker_path}. Skipping download.")
+        return extracted_path  # Return the existing path
+    
+    with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+        zip_ref.extractall(extracted_path)
+    
+    # Create repo2docker folder for new downloads
+    os.makedirs(repo2docker_path, exist_ok=True)
+    return extracted_path
 
 def create_github_repo(repo_name):
     token = "Write ypur Github token here"   #Make sure to give your Github accessibility token with required permissions.
@@ -244,7 +262,8 @@ def process_project(project_id):
 
         # Step 1: Download Project
         project_download_start = time.time()
-        project_path = download_project(project_id, BASE_DIR)
+        # project_path = download_project(project_id, BASE_DIR)
+        project_path = unzip_project(project_id, BASE_DIR)
         project_download_end = time.time()
 
         log_message(project_id, "DOWNLOAD", f"✅ Project downloaded successfully in {project_download_end - project_download_start:.2f} seconds.")

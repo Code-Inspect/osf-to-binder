@@ -3,6 +3,8 @@ import subprocess
 import sys
 import csv
 import shutil
+import time
+import pandas as pd
 from utils import log_message, BASE_DIR
 
 CSV_FILE = os.path.join(BASE_DIR, "execution_results.csv")  # CSV file at the base level
@@ -121,11 +123,16 @@ def execute_r_file(container_name, r_file, log_file, project_id):
     # Backup the entire repo2docker directory before execution
     backup_repo2docker(project_id)
 
+    # Get the correct working directory from the file path
+    r_script_dir = os.path.dirname(r_file)
+
     print(f"Executing {r_file} in container {container_name}...")
+
     command = [
         "docker", "exec", container_name,
-        "Rscript", r_file
+        "bash", "-c", f"cd {r_script_dir} && Rscript {os.path.basename(r_file)}"
     ]
+
     result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
     with open(log_file, "a") as log:
@@ -177,17 +184,19 @@ def render_rmd_file(container_name, rmd_file, log_file, project_id):
 
     # Append result to CSV
     log_execution_to_csv(project_id, rmd_file, execution_status)
-
+    
 def run_all_files_in_container(project_id):
-    """Automates the process of running R and Rmd files inside the container."""
+    """Automates execution of only the R and Rmd files listed in the CSV for the given project."""
     container_name = f"repo2docker-{project_id}"
     log_file = os.path.join(BASE_DIR, project_id, "execution_log.txt")
 
+    # Load CSV file
+    cleaned_csv_path = os.path.join(BASE_DIR, "project_id_r_code_file.csv")
+    df_project_files = pd.read_csv(cleaned_csv_path)
+
     # Ensure the container is running
     try:
-        inspect_command = [
-            "docker", "inspect", "-f", "{{.State.Running}}", container_name
-        ]
+        inspect_command = ["docker", "inspect", "-f", "{{.State.Running}}", container_name]
         result = subprocess.run(inspect_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
         if "true" not in result.stdout:
             print(f"Container {container_name} is not running.")
@@ -196,21 +205,51 @@ def run_all_files_in_container(project_id):
         print(f"Container {container_name} is not running.")
         return
 
-    # List and execute R and Rmd files only from the repo2docker folder
-    repo2docker_dir = "/data/repo2docker"
-    files = list_files(container_name, directory=repo2docker_dir, extensions=[".R", ".Rmd"])
-    if not files:
+    # List available R and Rmd files in the repo2docker folder **keeping structure**
+    repo2docker_dir = f"/data/repo2docker/"  # Ensure correct mount point
+    available_files = list_files(container_name, directory=repo2docker_dir, extensions=[".R", ".Rmd", ".r", ".rmd"])
+
+    if not available_files:
         print(f"No R or Rmd files found in {repo2docker_dir} for container {container_name}.")
         return
 
-    print(f"Found {len(files)} R and Rmd files in {repo2docker_dir}. Executing them now...")
-    for file in files:
-        if file.endswith(".R"):
+    # Filter the files from the CSV for the specific project
+    project_files = df_project_files[df_project_files["Project ID"] == project_id]["R Code File"].tolist()
+
+    if not project_files:
+        print(f"⚠️ No matching R files found for project {project_id} in the CSV. Skipping execution.")
+        return
+
+    # Normalize extensions to ensure both `.R` and `.r` are treated the same
+    matched_files = [
+        file for file in available_files
+        if os.path.basename(file).lower().endswith((".r", ".rmd")) and os.path.basename(file).lower() in [f.lower() for f in project_files]
+        and "repo2docker_backup" not in file
+    ]
+
+    if not matched_files:
+        print(f"⚠️ None of the expected files from the CSV were found inside the container for project {project_id}. Skipping execution.")
+        return
+
+    print(f"Found {len(matched_files)} R and Rmd files in {repo2docker_dir}. Executing them now...")
+
+    execution_start = time.time()
+
+    for file in matched_files:
+        file_start = time.time()
+        if file.endswith((".R", ".r")):
             execute_r_file(container_name, file, log_file, project_id)
-        elif file.endswith(".Rmd"):
+        elif file.endswith((".Rmd", ".rmd")):
             render_rmd_file(container_name, file, log_file, project_id)
+        file_end = time.time()
+
+    execution_end = time.time()
+
+    with open(log_file, "a") as log:
+        log.write(f"⏳ Total execution time for project {project_id}: {execution_end - execution_start:.2f} seconds\n")
 
     print(f"Execution completed for project {project_id}. Logs at {log_file}. Results stored in {CSV_FILE}")
+
 
 def process_projects(project_ids):
     """Processes multiple projects sequentially, ensuring results are logged incrementally."""

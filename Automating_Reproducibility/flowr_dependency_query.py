@@ -73,16 +73,23 @@ def run_docker_flowr(query, file_path, project_path):
     except Exception as e:
         print(f"Error running Docker command: {e}")
         return None
-
+    
 def aggregate_dependencies(project_path):
-    """Aggregates dependencies across all R files in a project."""
+    """Aggregates dependencies across all R files inside 'repo2docker' only."""
+    repo2docker_path = os.path.join(project_path, "repo2docker")
+    
+    if not os.path.exists(repo2docker_path):
+        print(f"⚠️ Repo2docker directory not found at {repo2docker_path}. Skipping dependency extraction.")
+        return {"libraries": set(), "sourcedFiles": set(), "readData": set(), "writtenData": set()}
+
     dependencies = {"libraries": set(), "sourcedFiles": set(), "readData": set(), "writtenData": set()}
-    for root, _, files in os.walk(project_path):
+    
+    for root, _, files in os.walk(repo2docker_path):  # Scan only inside 'repo2docker/'
         for file in files:
-            if file.endswith(".R"):
-                relative_file_path = os.path.relpath(os.path.join(root, file), project_path)
+            if file.endswith((".R", ".r", ".Rmd", ".rmd")):
+                relative_file_path = os.path.relpath(os.path.join(root, file), repo2docker_path)
                 print(f"Processing {relative_file_path}...")
-                raw_output = run_docker_flowr("dependencies", relative_file_path, project_path)
+                raw_output = run_docker_flowr("dependencies", relative_file_path, repo2docker_path)
                 if raw_output:
                     parsed_deps = parse_flowr_output(raw_output)
                     if parsed_deps:

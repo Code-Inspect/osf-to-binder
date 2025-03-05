@@ -26,7 +26,6 @@ def build_and_run_container(project_id, repo_only=False, build_and_run=False):
     ]
     log_message(project_id, "CONTAINER SETUP", "⚙️ Building Docker container...")
 
-
     if repo_only:
         print(f"📦 Building repository for project '{project_id}'...")
         try:

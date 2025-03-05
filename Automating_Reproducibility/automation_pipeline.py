@@ -28,70 +28,81 @@ def run_flowr_dependency_query(project_path):
 
     return True
 
-def download_file(file, download_path):
-    file_path = os.path.join(download_path, file.name)
-    print(f"Downloading file '{file.name}' to {file_path}...")
-    if not os.path.exists(download_path):
-        os.makedirs(download_path)
+def download_file(file, base_path, sub_path):
+    """Downloads a file while preserving its directory structure inside 'repo2docker'."""
+    file_path = os.path.join(base_path, "repo2docker", sub_path, file.name)
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)  # Create necessary directories
+
+    print(f"📥 Downloading '{file.name}' to {file_path}...")
     with open(file_path, 'wb') as f:
         file.write_to(f)
-    print(f"Downloaded '{file.name}' successfully.")
+    print(f"✅ Downloaded '{file.name}' successfully.")
 
-def download_folder(folder, download_path):
-    folder_path = os.path.join(download_path, folder.name)
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
+def download_folder(folder, base_path, sub_path=""):
+    """Recursively downloads a folder and maintains directory structure inside 'repo2docker'."""
+    folder_path = os.path.join(base_path, "repo2docker", sub_path, folder.name)
+    os.makedirs(folder_path, exist_ok=True)  # Ensure the folder structure is created
 
-    print(f"Downloading folder '{folder.name}' to {folder_path}...")
+    print(f"📁 Downloading folder '{folder.name}' to {folder_path}...")
 
     for file in folder.files:
-        download_file(file, folder_path)
+        download_file(file, base_path, os.path.join(sub_path, folder.name))
 
     for subfolder in folder.folders:
-        download_folder(subfolder, folder_path)
+        download_folder(subfolder, base_path, os.path.join(sub_path, folder.name))
 
 def download_project(project_id, download_directory):
+    """
+    Downloads an OSF project, preserving directory structure inside 'repo2docker'.
+    Skips downloading if the project already exists.
+    """
+    project_path = os.path.join(download_directory, project_id)
+    repo2docker_path = os.path.join(project_path, "repo2docker")
+
+    # **Skip download if the project already exists**
+    if os.path.exists(repo2docker_path):
+        print(f"⏭️ Project '{project_id}' already exists at {repo2docker_path}. Skipping download.")
+        return project_path  # Return the existing path
+
     osf = OSF()
 
-    # Attempt to fetch the project with retry logic for 429 errors
-    retries = 3  # Number of times to retry
-    wait_time = 20  # Wait time between retries
+    # Retry logic for rate limits
+    retries = 3
+    wait_time = 20
 
     for attempt in range(retries):
         try:
             project = osf.project(project_id)
             storage = project.storage('osfstorage')
-            break  # Exit the loop if successful
-
+            break  # Exit loop if successful
         except requests.exceptions.HTTPError as e:
-            # Handle HTTPError specifically
             if e.response.status_code == 429:
                 print(f"🚨 Rate limit hit for project '{project_id}'. Retrying in {wait_time} seconds... (Attempt {attempt + 1}/{retries})")
-                time.sleep(wait_time)  # Wait before retrying
+                time.sleep(wait_time)
             else:
                 print(f"❌ HTTP error for project '{project_id}': {e.response.status_code}")
                 return None
-
         except Exception as e:
-            # Catch any other exceptions
             print(f"❌ Unexpected error processing project '{project_id}': {e}")
             return None
     else:
         print(f"❌ Failed to download project '{project_id}' after {retries} attempts.")
         return None
 
-    # Proceed if project is downloaded successfully
-    project_path = os.path.join(download_directory, project_id)
-    os.makedirs(project_path, exist_ok=True)
+    # Create repo2docker folder for new downloads
+    os.makedirs(repo2docker_path, exist_ok=True)
 
     print(f"📥 Starting download of all contents in project '{project_id}'...")
+
     for folder in storage.folders:
         download_folder(folder, project_path)
-    for file in storage.files:
-        download_file(file, project_path)
+
+    #for file in storage.files:
+    #    download_file(file, project_path, "")
 
     print("✅ Project download completed.")
     return project_path
+
 
 def create_github_repo(repo_name):
     token = "Write ypur Github token here"   #Make sure to give your Github accessibility token with required permissions.
@@ -107,22 +118,24 @@ def create_github_repo(repo_name):
         sys.exit(1)
 
 def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
+    """Creates necessary repo2docker files without modifying existing structure."""
+
     repo_name = f"osf_{project_id}"
-    
     repo2docker_path = os.path.join(project_dir, "repo2docker")
-    os.makedirs(repo2docker_path, exist_ok=True)
+    dependencies_file = os.path.join(project_dir, "dependencies.txt")  # Now outside repo2docker
 
-    # Move all project files into the repo2docker directory
-    for file_name in os.listdir(project_dir):
-        file_path = os.path.join(project_dir, file_name)
-        if file_name != "repo2docker":
-            os.rename(file_path, os.path.join(repo2docker_path, file_name))
-
-    # Create dependencies.txt if not present
-    dependencies_file = os.path.join(repo2docker_path, "dependencies.txt")
+    # Ensure the dependencies.txt is in the correct location
     if not os.path.exists(dependencies_file):
-        print(f"No dependencies.txt found for {project_dir}. Skipping dependency handling.")
+        print(f"⚠️ No dependencies.txt found in {project_dir}. Skipping dependency handling.")
         return
+
+    print(f"✅ dependencies.txt found at {dependencies_file}. Proceeding with repo2docker setup.")
+    
+    # repo2docker folder should exist already from project download
+    if not os.path.exists(repo2docker_path):
+        print(f"⚠️ Repo2docker directory not found in {project_dir}. It should have been created during project download.")
+        return
+    
     # Extract dependencies
     dependencies = []
     with open(dependencies_file, "r") as f:
@@ -220,18 +233,38 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
             print(f"Error pushing to GitHub: {e}")
             sys.exit(1)
 
+import time
+
 def process_project(project_id):
+    """Processes a project while logging execution times."""
     try:
         log_message(project_id, "PROJECT INIT", f"🚀 Starting processing for project '{project_id}'")
 
+        start_time = time.time()
+
+        # Step 1: Download Project
+        project_download_start = time.time()
         project_path = download_project(project_id, BASE_DIR)
-        log_message(project_id, "DOWNLOAD", "✅ Project downloaded successfully.")
+        project_download_end = time.time()
 
+        log_message(project_id, "DOWNLOAD", f"✅ Project downloaded successfully in {project_download_end - project_download_start:.2f} seconds.")
+
+        # Step 2: Dependency Extraction
+        dep_extraction_start = time.time()
         run_flowr_dependency_query(project_path)
-        log_message(project_id, "DEPENDENCY EXTRACTION", "✅ Dependencies extracted successfully.")
+        dep_extraction_end = time.time()
 
+        log_message(project_id, "DEPENDENCY EXTRACTION", f"✅ Dependencies extracted successfully in {dep_extraction_end - dep_extraction_start:.2f} seconds.")
+
+        # Step 3: Container Setup
+        container_setup_start = time.time()
         create_repo2docker_files(project_path, project_id)
-        log_message(project_id, "REPO2DOCKER SETUP", "✅ Repo2Docker files created successfully.")
+        container_setup_end = time.time()
+
+        log_message(project_id, "REPO2DOCKER SETUP", f"✅ Repo2Docker files created successfully in {container_setup_end - container_setup_start:.2f} seconds.")
+
+        total_time = time.time() - start_time
+        log_message(project_id, "TOTAL TIME", f"⏳ Total time from download to container setup: {total_time:.2f} seconds.")
 
     except Exception as e:
         log_message(project_id, "ERROR", f"❌ Error occurred: {e}")

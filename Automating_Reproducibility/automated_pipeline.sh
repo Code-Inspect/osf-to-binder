@@ -51,7 +51,11 @@ execute_r_scripts() {
 # Function to process each project
 process_project() {
     local PROJECT_ID=$1
+    local project_log_file="$BASE_DIR/$PROJECT_ID/execution_log.txt"
     echo "Processing project: $PROJECT_ID"
+
+    # Record start time
+    local start_time=$(date +%s)
 
     clean_docker
     run_pipeline "$PROJECT_ID" || return 1
@@ -60,6 +64,16 @@ process_project() {
     execute_r_scripts "$PROJECT_ID" || return 1
 
     echo "Pipeline execution completed successfully for project: $PROJECT_ID"
+
+    # Record end time and calculate total duration
+    local end_time=$(date +%s)
+    local total_time=$((end_time - start_time))
+
+    # Ensure log directory exists
+    mkdir -p "$BASE_DIR/$PROJECT_ID"
+
+    # Append total time to execution_log.txt inside the project folder
+    echo "⏳ Total execution time for project $PROJECT_ID: $total_time seconds" | tee -a "$project_log_file"
 }
 
 # Main script execution
@@ -70,7 +84,6 @@ fi
 
 # Set up environment with uv
 echo "Setting up the environment using uv..."
-# cd "$BASE_DIR" || exit
 uv sync || { echo "Error: Failed to sync environment using uv."; exit 1; }
 source .venv/bin/activate
 

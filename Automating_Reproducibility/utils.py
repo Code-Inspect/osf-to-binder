@@ -1,25 +1,22 @@
 # utils.py
 import os
-from datetime import datetime
+import time
 
-BASE_DIR = "Automating_Reproducibility"
+# Base directory for all operations
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-def log_message(project_id, section, message):
-    """
-    Logs messages to execution_log.txt with timestamps and structured sections.
-
-    Parameters:
-    - project_id (str): The ID of the project.
-    - section (str): The section name (e.g., "CONTAINER BUILD", "R EXECUTION").
-    - message (str): The message to log (e.g., success or error message).
-    """
-    log_file = os.path.join(BASE_DIR, project_id, "execution_log.txt")
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    # Ensure the log file directory exists
-    os.makedirs(os.path.dirname(log_file), exist_ok=True)
-
+def log_message(project_id, stage, message):
+    """Log a message with timestamp to both console and log file."""
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    log_entry = f"[{timestamp}] [{project_id}] [{stage}] {message}"
+    
+    print(log_entry)
+    
+    # Create logs directory if it doesn't exist
+    logs_dir = os.path.join(BASE_DIR, "logs")
+    os.makedirs(logs_dir, exist_ok=True)
+    
+    # Write to project-specific log file
+    log_file = os.path.join(logs_dir, f"{project_id}.log")
     with open(log_file, "a") as f:
-        f.write(f"\n==== [{section}] ====\n")
-        f.write(f"[{timestamp}] {message}\n")
-        f.write("=" * 40 + "\n")
+        f.write(log_entry + "\n")

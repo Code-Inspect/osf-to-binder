@@ -51,7 +51,9 @@ execute_r_scripts() {
 # Function to process each project
 process_project() {
     local PROJECT_ID=$1
-    local project_log_file="$BASE_DIR/$PROJECT_ID/execution_log.txt"
+    local logs_dir="$BASE_DIR/logs"
+    mkdir -p "$logs_dir"
+    local project_log_file="$logs_dir/${PROJECT_ID}_pipeline.log"
     echo "Processing project: $PROJECT_ID"
 
     # Record start time
@@ -69,10 +71,7 @@ process_project() {
     local end_time=$(date +%s)
     local total_time=$((end_time - start_time))
 
-    # Ensure log directory exists
-    mkdir -p "$BASE_DIR/$PROJECT_ID"
-
-    # Append total time to execution_log.txt inside the project folder
+    # Append total time to execution_log.txt inside the logs folder
     echo "⏳ Total execution time for project $PROJECT_ID: $total_time seconds" | tee -a "$project_log_file"
 }
 

@@ -10,12 +10,15 @@ import zipfile
 def run_flowr_dependency_query(project_path):
     """Extract dependencies using flowr_dependency_query.py."""
     dependency_file = os.path.join(project_path, "dependencies.txt")
-    print(f"Running flowr_dependency_query.py for {project_path}...")
+    project_id = os.path.basename(project_path).replace("_repo", "")
+    src_path = os.path.join(project_path, f"{project_id}_src")
+    
+    print(f"Running flowr_dependency_query.py for {src_path}...")
 
     script_path = f"{BASE_DIR}/flowr_dependency_query.py"
     command = [
         "uv", "run", "python3", script_path,
-        "--input-dir", project_path,
+        "--input-dir", src_path,
         "--output-file", dependency_file
     ]
 
@@ -29,8 +32,8 @@ def run_flowr_dependency_query(project_path):
     return True
 
 def download_file(file, base_path, sub_path):
-    """Downloads a file while preserving its directory structure inside 'repo2docker'."""
-    file_path = os.path.join(base_path, "repo2docker", sub_path, file.name)
+    """Downloads a file while preserving its directory structure inside '{project_id}_src'."""
+    file_path = os.path.join(base_path, f"{os.path.basename(base_path)}_src", sub_path, file.name)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)  # Create necessary directories
 
     print(f"📥 Downloading '{file.name}' to {file_path}...")
@@ -39,8 +42,8 @@ def download_file(file, base_path, sub_path):
     print(f"✅ Downloaded '{file.name}' successfully.")
 
 def download_folder(folder, base_path, sub_path=""):
-    """Recursively downloads a folder and maintains directory structure inside 'repo2docker'."""
-    folder_path = os.path.join(base_path, "repo2docker", sub_path, folder.name)
+    """Recursively downloads a folder and maintains directory structure inside '{project_id}_src'."""
+    folder_path = os.path.join(base_path, f"{os.path.basename(base_path)}_src", sub_path, folder.name)
     os.makedirs(folder_path, exist_ok=True)  # Ensure the folder structure is created
 
     print(f"📁 Downloading folder '{folder.name}' to {folder_path}...")
@@ -53,15 +56,15 @@ def download_folder(folder, base_path, sub_path=""):
 
 def download_project(project_id, download_directory):
     """
-    Downloads an OSF project, preserving directory structure inside 'repo2docker'.
+    Downloads an OSF project, preserving directory structure inside '{project_id}_src'.
     Skips downloading if the project already exists.
     """
-    project_path = os.path.join(download_directory, project_id)
-    repo2docker_path = os.path.join(project_path, "repo2docker")
+    project_path = os.path.join(download_directory, f"{project_id}_repo")
+    src_path = os.path.join(project_path, f"{project_id}_src")
 
     # **Skip download if the project already exists**
-    if os.path.exists(repo2docker_path):
-        print(f"⏭️ Project '{project_id}' already exists at {repo2docker_path}. Skipping download.")
+    if os.path.exists(src_path):
+        print(f"⏭️ Project '{project_id}' already exists at {src_path}. Skipping download.")
         return project_path  # Return the existing path
 
     osf = OSF()
@@ -89,8 +92,9 @@ def download_project(project_id, download_directory):
         print(f"❌ Failed to download project '{project_id}' after {retries} attempts.")
         return None
 
-    # Create repo2docker folder for new downloads
-    os.makedirs(repo2docker_path, exist_ok=True)
+    # Create project folder structure
+    os.makedirs(project_path, exist_ok=True)
+    os.makedirs(src_path, exist_ok=True)
 
     print(f"📥 Starting download of all contents in project '{project_id}'...")
 
@@ -105,22 +109,84 @@ def download_project(project_id, download_directory):
 
 
 def unzip_project(project_id, download_directory):
-    """Unzips a project from the download directory to the base directory."""
+    """Unzips a project from the download directory to the base directory with new folder structure."""
     zip_file = os.path.join("downloads", f"{project_id}.zip")
-    extracted_path = os.path.join(download_directory, project_id)
-    repo2docker_path = os.path.join(extracted_path, "repo2docker")
+    project_path = os.path.join(download_directory, f"{project_id}_repo")
+    src_path = os.path.join(project_path, f"{project_id}_src")
 
     # **Skip download if the project already exists**
-    if os.path.exists(repo2docker_path):
-        print(f"⏭️ Project '{project_id}' already exists at {repo2docker_path}. Skipping download.")
-        return extracted_path  # Return the existing path
+    if os.path.exists(src_path) and os.listdir(src_path):  # Check if directory exists AND is not empty
+        print(f"⏭️ Project '{project_id}' already exists at {src_path}. Skipping download.")
+        return project_path  # Return the existing path
     
-    with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-        zip_ref.extractall(extracted_path)
+    # Check if zip file exists
+    if not os.path.exists(zip_file):
+        print(f"❌ Error: Zip file for project '{project_id}' not found at '{zip_file}'")
+        # Fall back to OSF download if zip doesn't exist
+        return download_project(project_id, download_directory)
     
-    # Create repo2docker folder for new downloads
-    os.makedirs(repo2docker_path, exist_ok=True)
-    return extracted_path
+    # Create project folder structure
+    os.makedirs(project_path, exist_ok=True)
+    os.makedirs(src_path, exist_ok=True)
+    
+    # Extract to a temporary location first
+    temp_extract_path = os.path.join(download_directory, f"temp_{project_id}")
+    os.makedirs(temp_extract_path, exist_ok=True)
+    
+    try:
+        with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+            print(f"📦 Extracting {zip_file} to {temp_extract_path}...")
+            zip_ref.extractall(temp_extract_path)
+        
+        # Move contents from repo2docker folder to src folder
+        temp_repo2docker_path = os.path.join(temp_extract_path, project_id, "repo2docker")
+        
+        # Check if the expected path exists
+        if os.path.exists(temp_repo2docker_path):
+            # Use subprocess for better handling of directory contents copying
+            print(f"📂 Moving contents from {temp_repo2docker_path} to {src_path}...")
+            subprocess.run(["cp", "-r", f"{temp_repo2docker_path}/.", src_path], check=True)
+            print(f"✅ Moved contents to {src_path}")
+        else:
+            # Try to find any content in the extracted folder
+            print(f"⚠️ Expected path {temp_repo2docker_path} not found. Searching for content...")
+            
+            # List all directories in the temp folder to help debug
+            print(f"📂 Contents of {temp_extract_path}:")
+            for root, dirs, files in os.walk(temp_extract_path):
+                print(f"  Directory: {root}")
+                for d in dirs:
+                    print(f"    Subdir: {d}")
+                for f in files:
+                    print(f"    File: {f}")
+            
+            # Try to find any content and move it
+            found_content = False
+            for root, dirs, files in os.walk(temp_extract_path):
+                if files:  # If we find any files
+                    print(f"📂 Found files in {root}, moving to {src_path}...")
+                    subprocess.run(["cp", "-r", f"{root}/.", src_path], check=True)
+                    found_content = True
+                    break
+            
+            if not found_content:
+                print(f"❌ No content found in extracted zip for project '{project_id}'")
+                # Fall back to OSF download
+                return download_project(project_id, download_directory)
+    except Exception as e:
+        print(f"❌ Error extracting zip file: {e}")
+        # Fall back to OSF download
+        return download_project(project_id, download_directory)
+    finally:
+        # Clean up temporary directory
+        subprocess.run(["rm", "-rf", temp_extract_path])
+    
+    # Verify the src directory has content
+    if os.path.exists(src_path) and not os.listdir(src_path):
+        print(f"⚠️ Source directory {src_path} is empty after extraction. Falling back to OSF download.")
+        return download_project(project_id, download_directory)
+    
+    return project_path
 
 def create_github_repo(repo_name):
     token = "Write ypur Github token here"   #Make sure to give your Github accessibility token with required permissions.
@@ -136,10 +202,10 @@ def create_github_repo(repo_name):
         sys.exit(1)
 
 def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
-    """Creates necessary repo2docker files without modifying existing structure."""
+    """Creates necessary repo2docker files in the parent folder."""
 
     repo_name = f"osf_{project_id}"
-    repo2docker_path = os.path.join(project_dir, "repo2docker")
+    # Files go directly in the project_dir (which is now {project_id}_repo)
     dependencies_file = os.path.join(project_dir, "dependencies.txt")  # Now outside repo2docker
 
     # Ensure the dependencies.txt is in the correct location
@@ -148,11 +214,6 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
         return
 
     print(f"✅ dependencies.txt found at {dependencies_file}. Proceeding with repo2docker setup.")
-    
-    # repo2docker folder should exist already from project download
-    if not os.path.exists(repo2docker_path):
-        print(f"⚠️ Repo2docker directory not found in {project_dir}. It should have been created during project download.")
-        return
     
     # Extract dependencies
     dependencies = []
@@ -168,8 +229,8 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
             elif is_r_libraries_section and line:
                 dependencies.append(line)
 
-    # Create DESCRIPTION file
-    description_path = os.path.join(repo2docker_path, "DESCRIPTION")
+    # Create DESCRIPTION file directly in project_dir
+    description_path = os.path.join(project_dir, "DESCRIPTION")
     with open(description_path, "w") as desc:
         desc.write("Package: repo2dockerProject\n")
         desc.write("Type: Package\n")
@@ -183,14 +244,12 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
             desc.write(f"{dep}, ")
         desc.write("\n")
 
-    # Create postBuild file
-    postbuild_path = os.path.join(repo2docker_path, "postBuild")
+    # Create postBuild file directly in project_dir
+    postbuild_path = os.path.join(project_dir, "postBuild")
     with open(postbuild_path, "w") as postbuild:
         postbuild.write("#!/bin/bash\n")
         postbuild.write("\n")
         postbuild.write("# Update system and install required libraries\n")
-       # postbuild.write("apt-get update && apt-get install -y libglpk-dev libxml2-dev libssl-dev\n")
-       # postbuild.write("\n")
         
         # Install R-remotes version 2.5.0
         postbuild.write("# Install R-remotes version 2.5.0\n")
@@ -204,8 +263,8 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
 
     os.chmod(postbuild_path, 0o755)
 
-    # Create pyproject.toml
-    pyproject_path = os.path.join(repo2docker_path, "pyproject.toml")
+    # Create pyproject.toml directly in project_dir
+    pyproject_path = os.path.join(project_dir, "pyproject.toml")
     with open(pyproject_path, "w") as pyproject:
         pyproject.write("[project]\n")
         pyproject.write(f'name = "osf_{project_id}"\n')
@@ -216,8 +275,8 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
         pyproject.write("\n[dependencies]\n")
         pyproject.write("gitpython = \">=3.1.30\"\n")
 
-    # Create README.md with a container start button
-    readme_path = os.path.join(repo2docker_path, "README.md")
+    # Create README.md with a container start button directly in project_dir
+    readme_path = os.path.join(project_dir, "README.md")
     with open(readme_path, "w") as readme:
         readme.write(f"# {repo_name}\n")
         readme.write("This repository was automatically generated for use with repo2docker.\n\n")
@@ -236,8 +295,8 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
         # Create GitHub repository
         create_github_repo(repo_name)
 
-        print(f"Initializing Git repository for {repo2docker_path}...")
-        repo = Repo.init(repo2docker_path)
+        print(f"Initializing Git repository for {project_dir}...")
+        repo = Repo.init(project_dir)
         if "origin" not in [remote.name for remote in repo.remotes]:
             repo.create_remote("origin", github_repo_url)
 
@@ -292,6 +351,11 @@ def main():
     if len(sys.argv) < 2:
         print("Usage: python3 automation_pipeline.py <OSF_PROJECT_ID> [<OSF_PROJECT_ID> ...] or <project_ids.txt>")
         sys.exit(1)
+
+    # Create logs directory if it doesn't exist
+    logs_dir = os.path.join(BASE_DIR, "logs")
+    os.makedirs(logs_dir, exist_ok=True)
+    print(f"Logs will be written to: {logs_dir}")
 
     project_ids = []
 

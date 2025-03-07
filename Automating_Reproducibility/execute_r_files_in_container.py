@@ -46,16 +46,17 @@ def list_files(container_name, directory, extensions):
     return [file for file in files if file]
 
 
-def backup_repo2docker(project_id):
-    """Backs up the entire repo2docker folder using Python file operations."""
-    project_path = os.path.join(BASE_DIR, project_id, "repo2docker")
-    backup_path = os.path.join(BASE_DIR, project_id, "repo2docker_backup")
+def backup_project_src(project_id):
+    """Backs up the project source directory."""
+    project_path = os.path.join(BASE_DIR, f"{project_id}_repo")
+    src_path = os.path.join(project_path, f"{project_id}_src")
+    backup_path = os.path.join(project_path, f"{project_id}_src_backup")
 
-    print(f"📂 Creating backup of {project_path} in {backup_path}, excluding execution_log.txt...")
+    print(f"📂 Creating backup of {src_path} in {backup_path}...")
 
     # Ensure the source folder exists
-    if not os.path.exists(project_path):
-        print(f"❌ Error: repo2docker directory '{project_path}' not found!")
+    if not os.path.exists(src_path):
+        print(f"❌ Error: Source directory '{src_path}' not found!")
         return
 
     # Ensure the backup directory exists, or create it
@@ -63,14 +64,10 @@ def backup_repo2docker(project_id):
         shutil.rmtree(backup_path)  # Remove old backup if it exists
     os.makedirs(backup_path)
 
-    # Copy all files except `execution_log.txt`
-    for item in os.listdir(project_path):
-        src_item = os.path.join(project_path, item)
+    # Copy all files
+    for item in os.listdir(src_path):
+        src_item = os.path.join(src_path, item)
         dest_item = os.path.join(backup_path, item)
-        
-        # Skip execution_log.txt
-        if item == "execution_log.txt":
-            continue
         
         if os.path.isdir(src_item):
             shutil.copytree(src_item, dest_item)
@@ -79,49 +76,31 @@ def backup_repo2docker(project_id):
 
     print(f"✅ Backup completed at {backup_path}")
 
-def restore_repo2docker(project_id):
-    """Restores the entire repo2docker folder using Python file operations."""
-    project_path = os.path.join(BASE_DIR, project_id, "repo2docker")
-    backup_path = os.path.join(BASE_DIR, project_id, "repo2docker_backup")
+def restore_project_src(project_id):
+    """Restores the project source directory from backup."""
+    project_path = os.path.join(BASE_DIR, f"{project_id}_repo")
+    src_path = os.path.join(project_path, f"{project_id}_src")
+    backup_path = os.path.join(project_path, f"{project_id}_src_backup")
 
-    print(f"♻️ Restoring {project_path} from {backup_path}, keeping execution_log.txt intact...")
+    print(f"♻️ Restoring {src_path} from {backup_path}...")
 
     # Ensure the backup exists
     if not os.path.exists(backup_path):
         print(f"⚠️ No backup found! Skipping restore step.")
         return
 
-    # Ensure the project directory exists, or create it
-    if os.path.exists(project_path):
-        # Remove everything except `execution_log.txt`
-        for item in os.listdir(project_path):
-            if item == "execution_log.txt":
-                continue
-            item_path = os.path.join(project_path, item)
-            if os.path.isdir(item_path):
-                shutil.rmtree(item_path)
-            else:
-                os.remove(item_path)
-    else:
-        os.makedirs(project_path)
-
-    # Restore files from the backup
-    for item in os.listdir(backup_path):
-        src_item = os.path.join(backup_path, item)
-        dest_item = os.path.join(project_path, item)
-        
-        if os.path.isdir(src_item):
-            shutil.copytree(src_item, dest_item)
-        else:
-            shutil.copy2(src_item, dest_item)
-
-    print(f"✅ Restore completed, execution_log.txt remains unchanged.")
+    # Remove current src directory and replace with backup
+    if os.path.exists(src_path):
+        shutil.rmtree(src_path)
+    
+    shutil.copytree(backup_path, src_path)
+    print(f"✅ Restore completed.")
 
 def execute_r_file(container_name, r_file, log_file, project_id):
-    """Executes an R file inside the container, backs up, and restores repo2docker while keeping logs intact."""
+    """Executes an R file inside the container, backs up, and restores project source."""
     
-    # Backup the entire repo2docker directory before execution
-    backup_repo2docker(project_id)
+    # Backup the project source directory before execution
+    backup_project_src(project_id)
 
     # Get the correct working directory from the file path
     r_script_dir = os.path.dirname(r_file)
@@ -135,7 +114,12 @@ def execute_r_file(container_name, r_file, log_file, project_id):
 
     result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-    with open(log_file, "a") as log:
+    # Write to log file in the logs directory
+    logs_dir = os.path.join(BASE_DIR, "logs")
+    os.makedirs(logs_dir, exist_ok=True)
+    execution_log_file = os.path.join(logs_dir, f"{project_id}_execution.log")
+    
+    with open(execution_log_file, "a") as log:
         log.write(f"File: {r_file}\n")
         if result.returncode == 0:
             log.write("Execution Successful:\n")
@@ -147,27 +131,32 @@ def execute_r_file(container_name, r_file, log_file, project_id):
             execution_status = "Failed"
         log.write("=" * 40 + "\n")
 
-    # Restore the entire repo2docker directory after execution, keeping logs
-    restore_repo2docker(project_id)
+    # Restore the project source directory after execution
+    restore_project_src(project_id)
 
     # Append result to CSV
     log_execution_to_csv(project_id, r_file, execution_status)
 
 def render_rmd_file(container_name, rmd_file, log_file, project_id):
-    """Renders an Rmd file inside the container, manages backup and restores output files while keeping logs intact."""
+    """Renders an Rmd file inside the container, manages backup and restores output files."""
     
-    # Backup the entire repo2docker directory before execution
-    backup_repo2docker(project_id)
+    # Backup the project source directory before execution
+    backup_project_src(project_id)
 
     print(f"Rendering {rmd_file} in container {container_name}...")
     
     render_command = (
-        f"R -e \"rmarkdown::render('{rmd_file}', output_dir='/data/repo2docker')\""
+        f"R -e \"rmarkdown::render('{rmd_file}', output_dir='/data/{project_id}_src')\""
     )
     command = ["docker", "exec", container_name, "bash", "-c", render_command]
     result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-    with open(log_file, "a") as log:
+    # Write to log file in the logs directory
+    logs_dir = os.path.join(BASE_DIR, "logs")
+    os.makedirs(logs_dir, exist_ok=True)
+    execution_log_file = os.path.join(logs_dir, f"{project_id}_execution.log")
+    
+    with open(execution_log_file, "a") as log:
         log.write(f"File: {rmd_file}\n")
         if result.returncode == 0:
             log.write("Rendering Successful:\n")
@@ -179,8 +168,8 @@ def render_rmd_file(container_name, rmd_file, log_file, project_id):
             execution_status = "Failed"
         log.write("=" * 40 + "\n")
 
-    # Restore the entire repo2docker directory after execution, keeping execution_log.txt intact
-    restore_repo2docker(project_id)
+    # Restore the project source directory after execution
+    restore_project_src(project_id)
 
     # Append result to CSV
     log_execution_to_csv(project_id, rmd_file, execution_status)
@@ -188,7 +177,9 @@ def render_rmd_file(container_name, rmd_file, log_file, project_id):
 def run_all_files_in_container(project_id):
     """Automates execution of only the R and Rmd files listed in the CSV for the given project."""
     container_name = f"repo2docker-{project_id}"
-    log_file = os.path.join(BASE_DIR, project_id, "execution_log.txt")
+    logs_dir = os.path.join(BASE_DIR, "logs")
+    os.makedirs(logs_dir, exist_ok=True)
+    log_file = os.path.join(logs_dir, f"{project_id}_execution.log")
 
     # Load CSV file
     cleaned_csv_path = os.path.join(BASE_DIR, "project_id_r_code_file.csv")
@@ -205,12 +196,12 @@ def run_all_files_in_container(project_id):
         print(f"Container {container_name} is not running.")
         return
 
-    # List available R and Rmd files in the repo2docker folder **keeping structure**
-    repo2docker_dir = f"/data/repo2docker/"  # Ensure correct mount point
-    available_files = list_files(container_name, directory=repo2docker_dir, extensions=[".R", ".Rmd", ".r", ".rmd"])
+    # List available R and Rmd files in the source directory
+    src_dir = f"/data/{project_id}_src"  # Path inside the container
+    available_files = list_files(container_name, directory=src_dir, extensions=[".R", ".Rmd", ".r", ".rmd"])
 
     if not available_files:
-        print(f"No R or Rmd files found in {repo2docker_dir} for container {container_name}.")
+        print(f"No R or Rmd files found in {src_dir} for container {container_name}.")
         return
 
     # Filter the files from the CSV for the specific project
@@ -224,14 +215,14 @@ def run_all_files_in_container(project_id):
     matched_files = [
         file for file in available_files
         if os.path.basename(file).lower().endswith((".r", ".rmd")) and os.path.basename(file).lower() in [f.lower() for f in project_files]
-        and "repo2docker_backup" not in file
+        and "src_backup" not in file
     ]
 
     if not matched_files:
         print(f"⚠️ None of the expected files from the CSV were found inside the container for project {project_id}. Skipping execution.")
         return
 
-    print(f"Found {len(matched_files)} R and Rmd files in {repo2docker_dir}. Executing them now...")
+    print(f"Found {len(matched_files)} R and Rmd files in {src_dir}. Executing them now...")
 
     execution_start = time.time()
 

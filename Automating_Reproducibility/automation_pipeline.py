@@ -244,6 +244,9 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
             desc.write(f"{dep}, ")
         desc.write("\n")
 
+    # delete the dependencies.txt file
+    os.remove(dependencies_file)
+
     # Create postBuild file directly in project_dir
     postbuild_path = os.path.join(project_dir, "postBuild")
     with open(postbuild_path, "w") as postbuild:

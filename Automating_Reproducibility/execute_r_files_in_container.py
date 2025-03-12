@@ -228,6 +228,8 @@ def run_all_files_in_container(project_id):
 
     for file in matched_files:
         file_start = time.time()
+        # remove the /data/ prefix
+        file = file[len("/data/"):]
         if file.endswith((".R", ".r")):
             execute_r_file(container_name, file, log_file, project_id)
         elif file.endswith((".Rmd", ".rmd")):

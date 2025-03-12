@@ -60,7 +60,8 @@ def download_project(project_id, download_directory):
     Skips downloading if the project already exists.
     """
     project_path = os.path.join(download_directory, f"{project_id}_repo")
-    src_path = os.path.join(project_path, f"{project_id}_src")
+    project_id_clean = project_id.replace("_repo", "")  # Ensure project_id is clean
+    src_path = os.path.join(project_path, f"{project_id_clean}_src")
 
     # **Skip download if the project already exists**
     if os.path.exists(src_path):
@@ -173,10 +174,19 @@ def unzip_project(project_id, download_directory):
                 print(f"❌ No content found in extracted zip for project '{project_id}'")
                 # Fall back to OSF download
                 return download_project(project_id, download_directory)
+                
     except Exception as e:
         print(f"❌ Error extracting zip file: {e}")
-        # Fall back to OSF download
+        
+        # 🛑 DELETE the incomplete folder before re-downloading
+        if os.path.exists(src_path):
+            print(f"🗑️ Deleting incomplete directory: {src_path}")
+            subprocess.run(["rm", "-rf", src_path])
+        
+        # Re-download the project from OSF
+        print(f"🔄 Re-downloading project '{project_id}' from OSF...")
         return download_project(project_id, download_directory)
+        
     finally:
         # Clean up temporary directory
         subprocess.run(["rm", "-rf", temp_extract_path])

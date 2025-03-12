@@ -109,9 +109,9 @@ def execute_r_file(container_name, r_file, log_file, project_id):
 
     command = [
         "docker", "exec", container_name,
-        "bash", "-c", f"cd {r_script_dir} && Rscript {os.path.basename(r_file)}"
+        "bash", "-c", f'cd "{r_script_dir}" && Rscript "{os.path.basename(r_file)}"'
     ]
-
+    
     result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
     # Write to log file in the logs directory

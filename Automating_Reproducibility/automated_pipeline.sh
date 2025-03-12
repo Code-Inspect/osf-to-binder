@@ -9,11 +9,11 @@ RUN_CONTAINER_SCRIPT="$BASE_DIR/run_code_in_container.py"
 EXECUTE_R_SCRIPT="$BASE_DIR/execute_r_files_in_container.py"
 
 # Function to clean Docker containers and images
-clean_docker() {
-    echo "Cleaning up Docker containers and images..."
-    docker container ls -a -q | xargs -r docker container rm -f || true
-    docker image prune -a -f || true
-}
+# clean_docker() {
+#     echo "Cleaning up Docker containers and images..."
+#     docker container ls -a -q | xargs -r docker container rm -f || true
+#     docker image prune -a -f || true
+# }
 
 run_pipeline() {
     local PROJECT_ID=$1
@@ -47,7 +47,6 @@ execute_r_scripts() {
         return 1
     fi
 }
-
 # Function to process each project
 process_project() {
     local PROJECT_ID=$1
@@ -64,6 +63,16 @@ process_project() {
     build_repository "$PROJECT_ID" || return 1
     run_container "$PROJECT_ID" || return 1
     execute_r_scripts "$PROJECT_ID" || return 1
+
+    # Remove the Docker container after execution
+    local container_name="repo2docker-${PROJECT_ID}"
+    echo "🗑️ Removing Docker container: $container_name"
+    docker rm -f "$container_name" || echo "⚠️ Warning: Failed to remove container $container_name"
+
+    # Remove the Docker image after execution
+    local image_name="repo2docker-${PROJECT_ID}"
+    echo "🗑️ Removing Docker image: $image_name"
+    docker rmi -f "$image_name" || echo "⚠️ Warning: Failed to remove image $image_name"
 
     echo "Pipeline execution completed successfully for project: $PROJECT_ID"
 

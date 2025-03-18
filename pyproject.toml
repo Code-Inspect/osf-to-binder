@@ -11,4 +11,5 @@ dependencies = [
     "jupyter-repo2docker>=2024.7.0",
     "osfclient>=0.0.5",
     "pandas>=2.2.3",
+    "seaborn>=0.13.2",
 ]

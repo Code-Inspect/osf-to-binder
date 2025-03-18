@@ -131,71 +131,9 @@ def unzip_project(project_id, download_directory):
     os.makedirs(project_path, exist_ok=True)
     os.makedirs(src_path, exist_ok=True)
     
-    # Extract to a temporary location first
-    temp_extract_path = os.path.join(download_directory, f"temp_{project_id}")
-    os.makedirs(temp_extract_path, exist_ok=True)
-    
-    try:
-        with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-            print(f"📦 Extracting {zip_file} to {temp_extract_path}...")
-            zip_ref.extractall(temp_extract_path)
-        
-        # Move contents from repo2docker folder to src folder
-        temp_repo2docker_path = os.path.join(temp_extract_path, project_id, "repo2docker")
-        
-        # Check if the expected path exists
-        if os.path.exists(temp_repo2docker_path):
-            # Use subprocess for better handling of directory contents copying
-            print(f"📂 Moving contents from {temp_repo2docker_path} to {src_path}...")
-            subprocess.run(["cp", "-r", f"{temp_repo2docker_path}/.", src_path], check=True)
-            print(f"✅ Moved contents to {src_path}")
-        else:
-            # Try to find any content in the extracted folder
-            print(f"⚠️ Expected path {temp_repo2docker_path} not found. Searching for content...")
-            
-            # List all directories in the temp folder to help debug
-            print(f"📂 Contents of {temp_extract_path}:")
-            for root, dirs, files in os.walk(temp_extract_path):
-                print(f"  Directory: {root}")
-                for d in dirs:
-                    print(f"    Subdir: {d}")
-                for f in files:
-                    print(f"    File: {f}")
-            
-            # Try to find any content and move it
-            found_content = False
-            for root, dirs, files in os.walk(temp_extract_path):
-                if files:  # If we find any files
-                    print(f"📂 Found files in {root}, moving to {src_path}...")
-                    subprocess.run(["cp", "-r", f"{root}/.", src_path], check=True)
-                    found_content = True
-                    break
-            
-            if not found_content:
-                print(f"❌ No content found in extracted zip for project '{project_id}'")
-                # Fall back to OSF download
-                return download_project(project_id, download_directory)
-                
-    except Exception as e:
-        print(f"❌ Error extracting zip file: {e}")
-        
-        # 🛑 DELETE the incomplete folder before re-downloading
-        if os.path.exists(src_path):
-            print(f"🗑️ Deleting incomplete directory: {src_path}")
-            subprocess.run(["rm", "-rf", src_path])
-        
-        # Re-download the project from OSF
-        print(f"🔄 Re-downloading project '{project_id}' from OSF...")
-        return download_project(project_id, download_directory)
-        
-    finally:
-        # Clean up temporary directory
-        subprocess.run(["rm", "-rf", temp_extract_path])
-    
-    # Verify the src directory has content
-    if os.path.exists(src_path) and not os.listdir(src_path):
-        print(f"⚠️ Source directory {src_path} is empty after extraction. Falling back to OSF download.")
-        return download_project(project_id, download_directory)
+    with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+        print(f"📦 Extracting {zip_file} to {src_path}...")
+        zip_ref.extractall(src_path)
     
     return project_path
 

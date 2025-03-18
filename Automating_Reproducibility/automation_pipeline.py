@@ -8,6 +8,8 @@ import shutil
 from osfclient.api import OSF
 from utils import log_message, BASE_DIR
 import zipfile
+import shutil
+
 
 def copy_existing_dependency_file(src_path, project_dir):
     """
@@ -169,7 +171,10 @@ def create_github_repo(repo_name):
         sys.exit(1)
 
 def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
-    """Creates necessary repo2docker files in the parent folder."""
+    """
+    Creates necessary repo2docker files in the project_dir.
+    Skips creating DESCRIPTION if it already exists.
+    """
 
     repo_name = f"osf_{project_id}"
     # Files go directly in the project_dir (which is now {project_id}_repo)
@@ -234,18 +239,6 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
 
     os.chmod(postbuild_path, 0o755)
 
-    # Create pyproject.toml directly in project_dir
-    pyproject_path = os.path.join(project_dir, "pyproject.toml")
-    with open(pyproject_path, "w") as pyproject:
-        pyproject.write("[project]\n")
-        pyproject.write(f'name = \"osf_{project_id}\"\n')
-        pyproject.write("version = \"0.1.0\"\n")
-        pyproject.write("description = \"Repo2Docker project for OSF\"\n")
-        pyproject.write("readme = \"README.md\"\n")
-        pyproject.write("requires-python = \">=3.12\"\n")
-        pyproject.write("\n[dependencies]\n")
-        pyproject.write("gitpython = \">=3.1.30\"\n")
-
     # Create README.md with a container start button directly in project_dir
     readme_path = os.path.join(project_dir, "README.md")
     with open(readme_path, "w") as readme:
@@ -292,7 +285,6 @@ def process_project(project_id):
 
         # Step 1: Download/Unzip Project
         project_download_start = time.time()
-        # project_path = download_project(project_id, BASE_DIR)
         project_path = unzip_project(project_id, BASE_DIR)  # Ensure unzip_project is imported/defined
         project_download_end = time.time()
         log_message(

@@ -8,13 +8,34 @@ import shutil
 from osfclient.api import OSF
 from utils import log_message, BASE_DIR
 import zipfile
+import os
+import subprocess
+import glob
+
 def run_flowr_dependency_query(project_path):
-    """Extract dependencies using flowr_dependency_query.py."""
+    """Extract dependencies using flowr_dependency_query.py if R or Rmd scripts exist."""
     dependency_file = os.path.join(project_path, "dependencies.txt")
     project_id = os.path.basename(project_path).replace("_repo", "")
     src_path = os.path.join(project_path, f"{project_id}_src")
-    
-    print(f"Running flowr_dependency_query.py for {src_path}...")
+
+    # 🔍 Check if any R/r/Rmd/rmd scripts exist in the project folder
+    r_scripts = glob.glob(os.path.join(src_path, "**", "*.R"), recursive=True) + \
+                glob.glob(os.path.join(src_path, "**", "*.r"), recursive=True) + \
+                glob.glob(os.path.join(src_path, "**", "*.Rmd"), recursive=True) + \
+                glob.glob(os.path.join(src_path, "**", "*.rmd"), recursive=True)
+
+    if not r_scripts:
+        print(f"❌ No R or Rmd scripts found in {src_path}. Skipping dependency extraction.")
+        
+        # If a dependency file was created before, remove it
+        if os.path.exists(dependency_file):
+            os.remove(dependency_file)
+            print(f"🗑️ Deleted '{dependency_file}' as no R or Rmd scripts were found.")
+        
+        log_message(project_id, "DEPENDENCY EXTRACTION", f"❌ No R or Rmd scripts found. Dependency extraction skipped.")
+        return False
+
+    print(f"📦 Running flowr_dependency_query.py for {src_path}...")
 
     script_path = f"{BASE_DIR}/flowr_dependency_query.py"
     command = [
@@ -25,12 +46,13 @@ def run_flowr_dependency_query(project_path):
 
     try:
         subprocess.run(command, check=True)
-        print(f"Dependencies extracted to {dependency_file}")
+        print(f"✅ Dependencies extracted to {dependency_file}")
+        log_message(project_id, "DEPENDENCY EXTRACTION", f"✅ Dependencies extracted successfully.")
+        return True
     except subprocess.CalledProcessError as e:
-        print(f"Error running flowr_dependency_query.py: {e}")
+        print(f"❌ Error running flowr_dependency_query.py: {e}")
+        log_message(project_id, "DEPENDENCY EXTRACTION", f"❌ Failed to extract dependencies: {e}")
         return False
-
-    return True
 
 def download_file(file, base_path, sub_path):
     """Downloads a file while preserving its directory structure inside '{project_id}_src'."""
@@ -250,8 +272,6 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
             print(f"Error pushing to GitHub: {e}")
             sys.exit(1)
 
-import time
-
 def process_project(project_id):
     """Processes a project while logging execution times."""
     try:
@@ -261,26 +281,37 @@ def process_project(project_id):
 
         # Step 1: Download/Unzip Project
         project_download_start = time.time()
-        # project_path = download_project(project_id, BASE_DIR)
         project_path = unzip_project(project_id, BASE_DIR)
-        project_download_end = time.time()
-        log_message(project_id, "DOWNLOAD", f"✅ Project downloaded successfully in {project_download_end - project_download_start:.2f} seconds.")
+        # project_path = download_project(project_id, BASE_DIR)
+
+        if project_path:
+            project_download_end = time.time()
+            log_message(project_id, "DOWNLOAD", f"✅ Project downloaded and unzipped successfully in {project_download_end - project_download_start:.2f} seconds.")
+        else:
+            log_message(project_id, "DOWNLOAD", f"❌ Failed to download/unzip project '{project_id}'. Skipping further processing.")
+            return  # ❌ Abort if download/unzip fails
 
         # Step 2: Dependency Extraction
         dep_extraction_start = time.time()
-        run_flowr_dependency_query(project_path)
+        dependency_success = run_flowr_dependency_query(project_path)
         dep_extraction_end = time.time()
 
+        if not dependency_success:
+            log_message(project_id, "DEPENDENCY EXTRACTION", f"❌ Failed to extract dependencies for project '{project_id}'. Skipping container setup.")
+            return  # ❌ Abort if dependency extraction fails
+
         log_message(project_id, "DEPENDENCY EXTRACTION", f"✅ Dependencies extracted successfully in {dep_extraction_end - dep_extraction_start:.2f} seconds.")
-       
-        # Step 3: Container Setup
+
+        # Step 3: Container Setup (Only runs if dependency extraction was successful)
         container_setup_start = time.time()
         create_repo2docker_files(project_path, project_id)
         container_setup_end = time.time()
+
         log_message(project_id, "REPO2DOCKER SETUP", f"✅ Repo2Docker files created successfully in {container_setup_end - container_setup_start:.2f} seconds.")
 
         total_time = time.time() - start_time
         log_message(project_id, "TOTAL TIME", f"⏳ Total time from download to container setup: {total_time:.2f} seconds.")
+
     except Exception as e:
         log_message(project_id, "ERROR", f"❌ Error occurred: {e}")
 

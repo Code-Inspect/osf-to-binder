@@ -28,7 +28,7 @@ run_pipeline() {
     fi
 
     # Ensure log file exists before checking for failure
-    local log_file="$BASE_DIR/logs/${PROJECT_ID}_pipeline.log"
+    local log_file="$BASE_DIR/logs/${PROJECT_ID}.log"
 
     if [ ! -f "$log_file" ]; then
         echo "⚠️ Warning: Log file not found for project '$PROJECT_ID'. Assuming failure."

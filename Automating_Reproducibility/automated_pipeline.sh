@@ -24,7 +24,7 @@ run_pipeline() {
     # Check if the pipeline execution was successful
     if [ $? -ne 0 ]; then
         echo "❌ Error: Pipeline execution failed for project '$PROJECT_ID'."
-        exit 1  # 🚨 Stop execution immediately
+        return 1  # 🚨 Stop execution immediately
     fi
 
     # Ensure log file exists before checking for failure
@@ -32,13 +32,14 @@ run_pipeline() {
 
     if [ ! -f "$log_file" ]; then
         echo "⚠️ Warning: Log file not found for project '$PROJECT_ID'. Assuming failure."
-        exit 1  # 🚨 Treat missing log file as failure
+        return 1  # 🚨 Treat missing log file as failure
     fi
 
     # Check if dependency extraction failed
     if grep -q "❌ Failed to extract dependencies" "$log_file"; then
         echo "❌ Dependency extraction failed for project '$PROJECT_ID'. Aborting."
-        exit 1  # 🚨 Stop execution immediately
+        echo "❌ Pipeline execution failed for project '$PROJECT_ID'."
+        return 1  # 🚨 Stop execution immediately
     fi
 
     echo "✅ Pipeline execution successful for project '$PROJECT_ID'."

@@ -236,19 +236,40 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
         postbuild.write("R -e \"remotes::install_github('flowr-analysis/rstudio-addin-flowr')\"\n")
 
     os.chmod(postbuild_path, 0o755)
+    # Fetch project details from OSF
+    osf = OSF()
+    try:
+        project = osf.project(project_id)
+        project_title = project.title
+        project_description = project.description or "No description provided."  # Handle cases with no description
+    except Exception as e:
+        print(f"⚠️ Error fetching project details from OSF: {e}. Using default README content.")
+        project_title = repo_name
+        project_description = "This repository was automatically generated for use with repo2docker."
 
     # Create README.md with a container start button directly in project_dir
     readme_path = os.path.join(project_dir, "README.md")
     with open(readme_path, "w") as readme:
-        readme.write(f"# {repo_name}\n")
-        readme.write("This repository was automatically generated for use with repo2docker.\n\n")
+        readme.write(f"# {project_title}\n\n")
+        readme.write(f"{project_description}\n\n")
+        readme.write(
+            f"This repository was auto-generated as part of testing reproducibility of open science projects hosted on OSF. Original OSF page: [https://osf.io/{project_id}/](https://osf.io/{project_id}/)\n\n")
         readme.write("## How to Launch\n")
-        readme.write(f"[![Binder](https://mybinder.org/badge_logo.svg)](https://notebooks.gesis.org/binder/v2/gh/Meet261/{repo_name}/HEAD?urlpath=rstudio)\n\n")
+        readme.write(
+            f"🚀 **Click below to launch the project on MyBinder:**  \n[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Meet261/{repo_name}/HEAD?urlpath=rstudio)\n\n")
+        readme.write(
+            f"🚀 **Click below to launch the project on the NFDI JupyterHub:**  \n[![NFDI](https://nfdi-jupyter.de/images/nfdi_badge.svg)](https://hub.nfdi-jupyter.de/r2d/gh/Meet261/{repo_name}/HEAD?urlpath=rstudio)\n\n")
         readme.write("## Start Container Locally\n")
         readme.write("To start the container locally:\n\n")
         readme.write("```bash\n")
         readme.write(f"docker run -p 8888:8888 --name {repo_name} -d {repo_name}\n")
-        readme.write("```\n")
+        readme.write("```\n\n")
+        readme.write(
+            "This repository demonstrates how a project from OSF can be containerized and tested using Binder. We facilitate a one-click launch of the OSF project, allowing anyone to browse, execute the code, and verify or compare the results from the associated research paper. This aligns with the objectives of the **CodeInspector project**, where we aim to enable **browser-based reproducibility and evaluation of open science projects**.\n\n")
+        readme.write(
+            "By integrating **OSF** and **Binder**, we aim to enhance transparency and reproducibility in computational social science and beyond. This repository serves as an example of how research projects can be packaged and shared in a fully executable, browser-based environment.\n\n")
+        readme.write("--- \n\n")
+        readme.write("This work was funded by the German Research Foundation (DFG) under project No. 504226141.")
 
     if add_github_repo:
         # Initialize Git repository and push to GitHub

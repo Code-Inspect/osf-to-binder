@@ -8,6 +8,7 @@ import pandas as pd
 from utils import log_message, BASE_DIR
 
 CSV_FILE = os.path.join(BASE_DIR, "execution_results.csv")  # CSV file at the base level
+TIMEOUT = None  # the time to wait for the container to run the script. `int` for timout in seconds. None means no timeout.
 
 def create_csv_file():
     """Creates the CSV file with headers if it doesn't exist."""
@@ -112,7 +113,11 @@ def execute_r_file(container_name, r_file, log_file, project_id):
         "bash", "-c", f'cd "{r_script_dir}" && Rscript "{os.path.basename(r_file)}"'
     ]
     
-    result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=TIMEOUT)
+    except subprocess.TimeoutExpired as e:
+        print(f"⚠️ Execution timed out after {TIMEOUT} seconds: {r_file}")
+        result = subprocess.CompletedProcess(args=command, returncode=1, stdout="", stderr=f"Execution timed out after {TIMEOUT} seconds")
 
     # Write to log file in the logs directory
     logs_dir = os.path.join(BASE_DIR, "logs")

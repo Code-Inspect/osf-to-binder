@@ -12,7 +12,7 @@ def build_and_run_container(project_id, repo_only=False, build_and_run=False):
         print(f"❌ Error: Project directory for project '{project_id}' not found at '{project_path}'")
         return None
 
-    image_name = f"repo2docker-{project_id}"
+    image_name = f"repo2docker-{project_id}-test"
     container_name = image_name
 
     # Build the container

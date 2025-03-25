@@ -54,9 +54,9 @@ def run_flowr_dependency_query(project_path):
         log_message(project_id, "DEPENDENCY EXTRACTION", f"❌ Failed to extract dependencies: {e}")
         return False
 
-def download_file(file, base_path, sub_path):
+def download_file(file, base_path, project_id, sub_path):
     """Downloads a file while preserving its directory structure inside '{project_id}_src'."""
-    file_path = os.path.join(base_path, f"{os.path.basename(base_path)}_src", sub_path, file.name)
+    file_path = os.path.join(base_path, f"{project_id}_src", sub_path, file.name)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)  # Create necessary directories
 
     print(f"📥 Downloading '{file.name}' to {file_path}...")
@@ -64,9 +64,9 @@ def download_file(file, base_path, sub_path):
         file.write_to(f)
     print(f"✅ Downloaded '{file.name}' successfully.")
 
-def download_folder(folder, base_path, sub_path=""):
+def download_folder(folder, base_path, project_id, sub_path=""):
     """Recursively downloads a folder and maintains directory structure inside '{project_id}_src'."""
-    folder_path = os.path.join(base_path, f"{os.path.basename(base_path)}_src", sub_path, folder.name)
+    folder_path = os.path.join(base_path, f"{project_id}_src", sub_path, folder.name)
     os.makedirs(folder_path, exist_ok=True)  # Ensure the folder structure is created
 
     print(f"📁 Downloading folder '{folder.name}' to {folder_path}...")
@@ -123,7 +123,7 @@ def download_project(project_id, download_directory):
     print(f"📥 Starting download of all contents in project '{project_id}'...")
 
     for folder in storage.folders:
-        download_folder(folder, project_path)
+        download_folder(folder, project_path, project_id_clean)
 
     #for file in storage.files:
     #    download_file(file, project_path, "")
@@ -160,7 +160,7 @@ def unzip_project(project_id, download_directory):
     return project_path
 
 def create_github_repo(repo_name):
-    token = "Write ypur Github token here"   #Make sure to give your Github accessibility token with required permissions.
+    # token = ""   #Make sure to give your Github accessibility token with required permissions.
     headers = {"Authorization": f"token {token}"}
     payload = {"name": repo_name, "private": False}
     response = requests.post("https://api.github.com/user/repos", json=payload, headers=headers)
@@ -172,7 +172,7 @@ def create_github_repo(repo_name):
         print(f"Failed to create GitHub repository: {response.json()}")
         sys.exit(1)
 
-def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
+def create_repo2docker_files(project_dir, project_id, add_github_repo=True):
     """
     Creates necessary repo2docker files in the project_dir.
     Skips creating DESCRIPTION if it already exists.

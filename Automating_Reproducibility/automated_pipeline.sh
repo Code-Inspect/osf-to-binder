@@ -80,7 +80,7 @@ process_project() {
     # Record start time
     local start_time=$(date +%s)
 
-    clean_docker
+    # clean_docker
     run_pipeline "$PROJECT_ID" || return 1  # Stop execution if pipeline fails
 
     # 🚨 Check if dependency extraction failed (directly from the script output instead of grep)
@@ -93,15 +93,15 @@ process_project() {
     run_container "$PROJECT_ID" || return 1  # Stop execution if container fails
     execute_r_scripts "$PROJECT_ID" || return 1  # Stop execution if R script fails
 
-    # Remove the Docker container after execution
-    local container_name="repo2docker-${PROJECT_ID}"
-    echo "🗑️ Removing Docker container: $container_name"
-    docker rm -f "$container_name" || echo "⚠️ Warning: Failed to remove container $container_name"
+    # # Remove the Docker container after execution
+    # local container_name="repo2docker-${PROJECT_ID}"
+    # echo "🗑️ Removing Docker container: $container_name"
+    # docker rm -f "$container_name" || echo "⚠️ Warning: Failed to remove container $container_name"
 
-    # Remove the Docker image after execution
-    local image_name="repo2docker-${PROJECT_ID}"
-    echo "🗑️ Removing Docker image: $image_name"
-    docker rmi -f "$image_name" || echo "⚠️ Warning: Failed to remove image $image_name"
+    # # Remove the Docker image after execution
+    # local image_name="repo2docker-${PROJECT_ID}"
+    # echo "🗑️ Removing Docker image: $image_name"
+    # docker rmi -f "$image_name" || echo "⚠️ Warning: Failed to remove image $image_name"
 
     echo "✅ Pipeline execution completed successfully for project: $PROJECT_ID"
 

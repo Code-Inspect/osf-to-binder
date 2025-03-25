@@ -250,10 +250,15 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=True):
     # Create README.md with a container start button directly in project_dir
     readme_path = os.path.join(project_dir, "README.md")
     with open(readme_path, "w") as readme:
-        readme.write(f"# {project_title}\n\n")
+        readme.write(f"# Automated reproducibility test for the OSF project, {project_id}\n\n")
+        readme.write("--- \n")
+        readme.write(f"## OSF Project metadata: \n")
+        readme.write(f"{project_title}\n\n")
         readme.write(f"{project_description}\n\n")
+        readme.write("--- \n")
         readme.write(
             f"This repository was auto-generated as part of testing reproducibility of open science projects hosted on OSF. Original OSF page: [https://osf.io/{project_id}/](https://osf.io/{project_id}/)\n\n")
+        readme.write(f"The contents of the folder {project_id}_src was cloned from the OSF project on 12-03-2025. The files, DESCRIPTION and postBuild has been added automatically inorder to make this project Binder ready.\n\n")
         readme.write("## How to Launch\n")
         readme.write(
             f"🚀 **Click below to launch the project on MyBinder:**  \n[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Meet261/{repo_name}/HEAD?urlpath=rstudio)\n\n")

@@ -160,7 +160,7 @@ def unzip_project(project_id, download_directory):
     return project_path
 
 def create_github_repo(repo_name):
-    # token = ""   #Make sure to give your Github accessibility token with required permissions.
+    token = os.getenv("GITHUB_ACCESS_TOKEN")   #Make sure to give your Github accessibility token with required permissions.
     headers = {"Authorization": f"token {token}"}
     payload = {"name": repo_name, "private": False}
     response = requests.post("https://api.github.com/user/repos", json=payload, headers=headers)

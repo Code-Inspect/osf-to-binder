@@ -4,7 +4,6 @@ import os
 import subprocess
 import sys
 import argparse
-from utils import log_message, BASE_DIR
 
 
 def parse_flowr_output(raw_output):

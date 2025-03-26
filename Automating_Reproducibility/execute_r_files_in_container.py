@@ -5,7 +5,7 @@ import csv
 import shutil
 import time
 import pandas as pd
-from utils import log_message, BASE_DIR
+from utils import BASE_DIR, REPOS_DIR, LOGS_DIR
 
 CSV_FILE = os.path.join(BASE_DIR, "execution_results.csv")  # CSV file at the base level
 TIMEOUT = None  # the time to wait for the container to run the script. `int` for timout in seconds. None means no timeout.
@@ -49,7 +49,7 @@ def list_files(container_name, directory, extensions):
 
 def backup_project_src(project_id):
     """Backs up the project source directory."""
-    project_path = os.path.join(BASE_DIR, f"{project_id}_repo")
+    project_path = os.path.join(REPOS_DIR, f"{project_id}_repo")
     src_path = os.path.join(project_path, f"{project_id}_src")
     backup_path = os.path.join(project_path, f"{project_id}_src_backup")
 
@@ -79,7 +79,7 @@ def backup_project_src(project_id):
 
 def restore_project_src(project_id):
     """Restores the project source directory from backup."""
-    project_path = os.path.join(BASE_DIR, f"{project_id}_repo")
+    project_path = os.path.join(REPOS_DIR, f"{project_id}_repo")
     src_path = os.path.join(project_path, f"{project_id}_src")
     backup_path = os.path.join(project_path, f"{project_id}_src_backup")
 
@@ -120,9 +120,7 @@ def execute_r_file(container_name, r_file, log_file, project_id):
         result = subprocess.CompletedProcess(args=command, returncode=1, stdout="", stderr=f"Execution timed out after {TIMEOUT} seconds")
 
     # Write to log file in the logs directory
-    logs_dir = os.path.join(BASE_DIR, "logs")
-    os.makedirs(logs_dir, exist_ok=True)
-    execution_log_file = os.path.join(logs_dir, f"{project_id}_execution.log")
+    execution_log_file = os.path.join(LOGS_DIR, f"{project_id}_execution.log")
     
     with open(execution_log_file, "a") as log:
         log.write(f"File: {r_file}\n")
@@ -157,9 +155,7 @@ def render_rmd_file(container_name, rmd_file, log_file, project_id):
     result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
     # Write to log file in the logs directory
-    logs_dir = os.path.join(BASE_DIR, "logs")
-    os.makedirs(logs_dir, exist_ok=True)
-    execution_log_file = os.path.join(logs_dir, f"{project_id}_execution.log")
+    execution_log_file = os.path.join(LOGS_DIR, f"{project_id}_execution.log")
     
     with open(execution_log_file, "a") as log:
         log.write(f"File: {rmd_file}\n")
@@ -182,9 +178,7 @@ def render_rmd_file(container_name, rmd_file, log_file, project_id):
 def run_all_files_in_container(project_id):
     """Automates execution of only the R and Rmd files listed in the CSV for the given project."""
     container_name = f"repo2docker-{project_id}-test"
-    logs_dir = os.path.join(BASE_DIR, "logs")
-    os.makedirs(logs_dir, exist_ok=True)
-    log_file = os.path.join(logs_dir, f"{project_id}_execution.log")
+    log_file = os.path.join(LOGS_DIR, f"{project_id}_execution.log")
 
     # Load CSV file
     cleaned_csv_path = os.path.join(BASE_DIR, "project_id_r_code_file.csv")

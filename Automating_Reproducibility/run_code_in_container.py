@@ -3,11 +3,11 @@ import subprocess
 import sys
 import argparse
 from git import Repo
-from utils import log_message, BASE_DIR
+from utils import log_message, BASE_DIR, REPOS_DIR
 
 def build_and_run_container(project_id, repo_only=False, build_and_run=False):
     """Builds and runs the repo2docker container for a project."""
-    project_path = os.path.join(BASE_DIR, f"{project_id}_repo")
+    project_path = os.path.join(REPOS_DIR, f"{project_id}_repo")
     if not os.path.exists(project_path):
         print(f"❌ Error: Project directory for project '{project_id}' not found at '{project_path}'")
         return None

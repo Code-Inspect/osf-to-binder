@@ -1,18 +1,15 @@
-#!/usr/bin/env python3
-
 import os
 import sys
 import subprocess
 import requests
 from git import Repo
 import time
-import shutil
 from osfclient.api import OSF
 import zipfile
 import glob
 import logging
-from datetime import datetime
 import argparse
+from utils import REPOS_DIR
 
 # Base directory
 BASE_DIR = "Automating_Reproducibility"
@@ -368,7 +365,7 @@ def process_project(project_id):
     try:
         # Step 1: Download/Unzip Project
         project_download_start = time.time()
-        project_path = unzip_project(project_id, BASE_DIR)
+        project_path = unzip_project(project_id, REPOS_DIR)
 
         if not project_path:
             log_message(project_id, "DOWNLOAD", f"❌ Failed to download/unzip project '{project_id}'. Skipping further processing.")

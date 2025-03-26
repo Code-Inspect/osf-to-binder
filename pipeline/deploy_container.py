@@ -8,7 +8,7 @@ def check_project_exists(project_id):
     """Checks if the project directory exists and returns the path if it does."""
     project_path = os.path.join(REPOS_DIR, f"{project_id}_repo")
     if not os.path.exists(project_path):
-        log_message(project_id, "ERROR", f"❌ Project directory not found at '{project_path}'")
+        log_message(project_id, "CONTAINER BUILD", f"❌ Project directory not found at '{project_path}'")
         return None
     return project_path
 
@@ -30,39 +30,39 @@ def build_docker_image(project_id, project_path):
         project_path
     ]
     
-    log_message(project_id, "CONTAINER SETUP", "⚙️ Building Docker container...")
+    log_message(project_id, "CONTAINER BUILD", "⚙️ Building Docker container...")
     
     try:
         subprocess.run(build_command, check=True)
         log_message(project_id, "CONTAINER BUILD", "✅ Container built successfully.")
         return image_name
     except subprocess.CalledProcessError as e:
-        log_message(project_id, "CONTAINER ERROR", f"❌ Failed to build container: {e.returncode}")
-        log_message(project_id, "COMMAND", f"{' '.join(e.cmd)}")
+        log_message(project_id, "CONTAINER BUILD", f"❌ Failed to build container: {e.returncode}")
+        log_message(project_id, "CONTAINER BUILD", f"{' '.join(e.cmd)}")
         return None
 
 def build_image(project_id):
     """Builds the docker image using repo2docker."""
-    log_message(project_id, "BUILD", f"=== Building repository for project: {project_id} ===")
+    log_message(project_id, "CONTAINER BUILD", f"=== Building repository for project: {project_id} ===")
     
     try:
         project_path = check_project_exists(project_id)
         if not project_path:
             return False
             
-        log_message(project_id, "BUILD", f"📦 Building repository...")
+        log_message(project_id, "CONTAINER BUILD", f"📦 Building repository...")
         
         image_name = build_docker_image(project_id, project_path)
         if image_name:
             return True
         return False
     except Exception as e:
-        log_message(project_id, "BUILD", f"❌ Failed to build repository: {e}")
+        log_message(project_id, "CONTAINER BUILD", f"❌ Failed to build repository: {e}")
         return False
     
 def run_container(project_id):
     """Runs the container for the project."""
-    log_message(project_id, "CONTAINER", f"=== Running container for project: {project_id} ===")
+    log_message(project_id, "CONTAINER RUN", f"=== Running container for project: {project_id} ===")
     
     project_path = check_project_exists(project_id)
     if not project_path:
@@ -73,9 +73,9 @@ def run_container(project_id):
     # Removes an existing container if it exists.
     try:
         subprocess.run(["docker", "rm", "-f", container_name], check=True)
-        log_message(project_id, "CONTAINER", f"🗑️ Removed existing container '{container_name}'.")
+        log_message(project_id, "CONTAINER RUN", f"🗑️ Removed existing container '{container_name}'.")
     except subprocess.CalledProcessError:
-        log_message(project_id, "CONTAINER", f"ℹ️ No existing container '{container_name}' found to remove.")
+        log_message(project_id, "CONTAINER RUN", f"ℹ️ No existing container '{container_name}' found to remove.")
     
     # Run the container
     run_command = [
@@ -90,28 +90,28 @@ def run_container(project_id):
         log_message(project_id, "CONTAINER RUN", f"✅ Container '{container_name}' started successfully.")
         return True
     except subprocess.CalledProcessError as e:
-        log_message(project_id, "CONTAINER ERROR", f"❌ Failed to start container: {e.returncode}")
-        log_message(project_id, "COMMAND", f"{' '.join(e.cmd)}")
+        log_message(project_id, "CONTAINER RUN", f"❌ Failed to start container: {e.returncode}")
+        log_message(project_id, "CONTAINER RUN", f"{' '.join(e.cmd)}")
         return False
 
 def build_and_run(project_id, no_run=False):
     """Processes a project."""
-    log_message(project_id, "PROCESS", f"=== 🚀 Processing Project: '{project_id}' ===")
+    log_message(project_id, "CONTAINER BUILD", f"=== 🚀 Processing Project: '{project_id}' ===")
     try:
         if not build_image(project_id):
-            log_message(project_id, "BUILD", f"⚠️ Failed to build repository.")
+            log_message(project_id, "CONTAINER BUILD", f"⚠️ Failed to build repository.")
             return False
-        log_message(project_id, "BUILD", f"✅ Repository built successfully.")
+        log_message(project_id, "CONTAINER BUILD", f"✅ Repository built successfully.")
         if no_run:
             return True
         
         if not run_container(project_id):
-            log_message(project_id, "CONTAINER", f"⚠️ Failed to run container.")
+            log_message(project_id, "CONTAINER RUN", f"⚠️ Failed to run container.")
             return False
-        log_message(project_id, "CONTAINER", f"✅ Container is running.")
+        log_message(project_id, "CONTAINER RUN", f"✅ Container is running.")
         return True
     except Exception as e:
-        log_message(project_id, "ERROR", f"❌ Unexpected error: {e}")
+        log_message(project_id, "CONTAINER BUILD", f"❌ Unexpected error: {e}")
         return False
 
 if __name__ == "__main__":
@@ -130,7 +130,7 @@ if __name__ == "__main__":
         else:
             project_ids = args.project_id
     else:
-        log_message("system", "ERROR", "❌ No project IDs provided.")
+        print("❌ No project IDs provided.")
         sys.exit(1)
 
     for project_id in project_ids:

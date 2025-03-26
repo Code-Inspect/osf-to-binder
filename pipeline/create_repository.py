@@ -8,7 +8,7 @@ def create_github_repo(repo_name):
     """Creates a GitHub repository."""
     token = os.getenv("GITHUB_ACCESS_TOKEN")
     if not token:
-        log_message(repo_name, "GITHUB", "❌ GitHub access token not found in environment variables.")
+        log_message(repo_name, "REPO2DOCKER SETUP", "❌ GitHub access token not found in environment variables.")
         return False
 
     headers = {"Authorization": f"token {token}"}
@@ -16,13 +16,13 @@ def create_github_repo(repo_name):
     response = requests.post("https://api.github.com/user/repos", json=payload, headers=headers)
     
     if response.status_code == 201:
-        log_message(repo_name, "GITHUB", f"✅ GitHub repository '{repo_name}' created successfully.")
+        log_message(repo_name, "REPO2DOCKER SETUP", f"✅ GitHub repository '{repo_name}' created successfully.")
         return True
     elif response.status_code == 422:
-        log_message(repo_name, "GITHUB", f"ℹ️ GitHub repository '{repo_name}' already exists.")
+        log_message(repo_name, "REPO2DOCKER SETUP", f"ℹ️ GitHub repository '{repo_name}' already exists.")
         return True
     else:
-        log_message(repo_name, "GITHUB", f"❌ Failed to create GitHub repository: {response.json()}")
+        log_message(repo_name, "REPO2DOCKER SETUP", f"❌ Failed to create GitHub repository: {response.json()}")
         return False
 
 def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
@@ -31,10 +31,10 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
     dependencies_file = os.path.join(project_dir, "dependencies.txt")
 
     if not os.path.exists(dependencies_file):
-        log_message(project_id, "REPO2DOCKER", f"⚠️ No dependencies.txt found in {project_dir}. Skipping dependency handling.")
+        log_message(project_id, "REPO2DOCKER SETUP", f"⚠️ No dependencies.txt found in {project_dir}. Skipping dependency handling.")
         return False
     
-    log_message(project_id, "REPO2DOCKER", f"✅ dependencies.txt found at {dependencies_file}. Proceeding with repo2docker setup.")
+    log_message(project_id, "REPO2DOCKER SETUP", f"✅ dependencies.txt found at {dependencies_file}. Proceeding with repo2docker setup.")
      
     dependencies = []
     with open(dependencies_file, "r") as f:
@@ -84,7 +84,7 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
         project_title = project.title
         project_description = project.description or "No description provided."
     except Exception as e:
-        log_message(project_id, "REPO2DOCKER", f"⚠️ Error fetching project details from OSF: {e}. Using default README content.")
+        log_message(project_id, "REPO2DOCKER SETUP", f"⚠️ Error fetching project details from OSF: {e}. Using default README content.")
         project_title = repo_name
         project_description = "This repository was automatically generated for use with repo2docker."
 
@@ -121,7 +121,7 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
             return False
 
         github_repo_url = f"https://github.com/Meet261/{repo_name}.git"
-        log_message(project_id, "GITHUB", f"Initializing Git repository for {project_dir}...")
+        log_message(project_id, "REPO2DOCKER SETUP", f"Initializing Git repository for {project_dir}...")
         
         try:
             repo = Repo.init(project_dir)
@@ -132,10 +132,10 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
             repo.index.commit("Initial commit for repo2docker project")
             repo.git.checkout("-B", "main")
             repo.remotes.origin.push(refspec="main:main", force=True)
-            log_message(project_id, "GITHUB", f"✅ Repo2docker files created and pushed to {github_repo_url}.")
+            log_message(project_id, "REPO2DOCKER SETUP", f"✅ Repo2docker files created and pushed to {github_repo_url}.")
             return True
         except Exception as e:
-            log_message(project_id, "GITHUB", f"❌ Error pushing to GitHub: {e}")
+            log_message(project_id, "REPO2DOCKER SETUP", f"❌ Error pushing to GitHub: {e}")
             return False
 
     return True

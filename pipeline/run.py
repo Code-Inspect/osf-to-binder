@@ -6,7 +6,7 @@ import argparse
 from utils import REPOS_DIR, DOWNLOADS_DIR, log_message
 from deploy_container import build_and_run
 from create_repository import create_repo2docker_files
-from execute_r_files_in_container import run_all_files_in_container, create_csv_file
+from execute_r_files_in_container import execute_r_scripts
 from flowr_dependency_query import extract_dependencies
 from osf_zip_file_download import download_project
 
@@ -60,17 +60,6 @@ def unzip_project(project_id):
     
     return project_path
 
-def execute_r_scripts(project_id):
-    """Executes R scripts in the container."""
-    log_message(project_id, "R_EXECUTION", f"Executing R scripts in the container for project ID: {project_id}")
-    try:
-        create_csv_file()
-        run_all_files_in_container(project_id)
-        return True
-    except Exception as e:
-        log_message(project_id, "R_EXECUTION", f"❌ Failed to execute R scripts: {e}")
-        return False
-
 
 def process_project(project_id):
     """Processes a project with all necessary steps."""
@@ -78,7 +67,7 @@ def process_project(project_id):
     log_message(project_id, "PROJECT INIT", f"🚀 Starting processing for project '{project_id}'")
 
     try:
-        # Step 1: Download/Unzip Project
+        # Stage 1: Download/Unzip Project
         project_download_start = time.time()
         project_path = unzip_project(project_id)
 
@@ -89,7 +78,7 @@ def process_project(project_id):
         project_download_end = time.time()
         log_message(project_id, "DOWNLOAD", f"✅ Project downloaded and unzipped successfully in {project_download_end - project_download_start:.2f} seconds.")
 
-        # Step 2: Dependency Extraction
+        # Stage 2: Dependency Extraction
         dep_extraction_start = time.time()
         if not run_flowr_dependency_query(project_path):
             log_message(project_id, "DEPENDENCY EXTRACTION", f"❌ Failed to extract dependencies for project '{project_id}'. Skipping container setup.")
@@ -98,7 +87,7 @@ def process_project(project_id):
         dep_extraction_end = time.time()
         log_message(project_id, "DEPENDENCY EXTRACTION", f"✅ Dependencies extracted successfully in {dep_extraction_end - dep_extraction_start:.2f} seconds.")
 
-        # Step 3: Container Setup
+        # Stage 3: Create Repository
         container_setup_start = time.time()
         if not create_repo2docker_files(project_path, project_id):
             log_message(project_id, "REPO2DOCKER SETUP", f"❌ Failed to create repo2docker files for project '{project_id}'.")
@@ -107,11 +96,11 @@ def process_project(project_id):
         container_setup_end = time.time()
         log_message(project_id, "REPO2DOCKER SETUP", f"✅ Repo2Docker files created successfully in {container_setup_end - container_setup_start:.2f} seconds.")
 
-        # Step 4: Build and Run Container
+        # Stage 4: Build and Run Container
         if not build_and_run(project_id):
             return False
 
-        # Step 5: Execute R Scripts
+        # Stage 5: Execute R Scripts
         if not execute_r_scripts(project_id):
             return False
 

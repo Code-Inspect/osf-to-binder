@@ -14,58 +14,6 @@ from run_code_in_container import build_and_run_container
 from execute_r_files_in_container import run_all_files_in_container, create_csv_file
 from flowr_dependency_query import process_project as extract_dependencies
 
-# Global dictionary to store loggers
-project_loggers = {}
-project_execution_loggers = {}
-
-def setup_logging(project_id, execution_log=False):
-    """Set up logging for a specific project using a single log file."""
-    # Return existing logger if already set up
-    logger_dict = project_execution_loggers if execution_log else project_loggers
-    if project_id in logger_dict:
-        return logger_dict[project_id]
-
-    logs_dir = os.path.join(BASE_DIR, "logs")
-    os.makedirs(logs_dir, exist_ok=True)
-    
-    # Create log file based on type
-    log_file = os.path.join(logs_dir, f"{project_id}{'_execution' if execution_log else ''}.log")
-    
-    # Create a new logger for this project
-    logger = logging.getLogger(f"{project_id}{'_execution' if execution_log else ''}")
-    logger.setLevel(logging.INFO)
-    
-    # Only add handlers if they haven't been added yet
-    if not logger.handlers:
-        # File handler
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(logging.INFO)
-        
-        # Console handler (only for non-execution logs)
-        if not execution_log:
-            console_handler = logging.StreamHandler()
-            console_handler.setLevel(logging.INFO)
-        
-        # Create formatters and add them to the handlers
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        file_handler.setFormatter(formatter)
-        if not execution_log:
-            console_handler.setFormatter(formatter)
-        
-        # Add handlers to the logger
-        logger.addHandler(file_handler)
-        if not execution_log:
-            logger.addHandler(console_handler)
-    
-    # Store the logger in our global dictionary
-    logger_dict[project_id] = logger
-    return logger
-
-def log_message(project_id, stage, message, execution_log=False):
-    """Log a message for a specific project and stage."""
-    logger = setup_logging(project_id, execution_log)
-    logger.info(f"[{stage}] {message}")
-
 def run_flowr_dependency_query(project_path):
     """Extract dependencies using flowr_dependency_query.py if R or Rmd scripts exist."""
     dependency_file = os.path.join(project_path, "dependencies.txt")

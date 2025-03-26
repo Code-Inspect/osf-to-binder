@@ -5,7 +5,7 @@ import csv
 import shutil
 import time
 import pandas as pd
-from utils import BASE_DIR, REPOS_DIR, LOGS_DIR
+from utils import BASE_DIR, REPOS_DIR, LOGS_DIR, log_message
 
 CSV_FILE = os.path.join(BASE_DIR, "execution_results.csv")  # CSV file at the base level
 TIMEOUT = None  # the time to wait for the container to run the script. `int` for timout in seconds. None means no timeout.
@@ -114,25 +114,27 @@ def execute_r_file(container_name, r_file, log_file, project_id):
     ]
     
     try:
-        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=TIMEOUT)
-    except subprocess.TimeoutExpired as e:
-        print(f"⚠️ Execution timed out after {TIMEOUT} seconds: {r_file}")
+        result = subprocess.run(
+            command, 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE, 
+            text=True, 
+            timeout=TIMEOUT
+        )
+    except subprocess.TimeoutExpired:
         result = subprocess.CompletedProcess(args=command, returncode=1, stdout="", stderr=f"Execution timed out after {TIMEOUT} seconds")
 
-    # Write to log file in the logs directory
-    execution_log_file = os.path.join(LOGS_DIR, f"{project_id}_execution.log")
+    # Log execution results
+    log_message(project_id, "FILE", f"File: {r_file}", execution_log=True)
     
-    with open(execution_log_file, "a") as log:
-        log.write(f"File: {r_file}\n")
-        if result.returncode == 0:
-            log.write("Execution Successful:\n")
-            log.write(result.stdout + "\n")
-            execution_status = "Successful"
-        else:
-            log.write("Execution Failed:\n")
-            log.write(result.stderr + "\n")
-            execution_status = "Failed"
-        log.write("=" * 40 + "\n")
+    if result.returncode == 0:
+        log_message(project_id, "SUCCESS", f"Execution Successful:\n{result.stdout}", execution_log=True)
+        execution_status = "Successful"
+    else:
+        log_message(project_id, "ERROR", f"Execution Failed:\n{result.stderr}", execution_log=True)
+        execution_status = "Failed"
+    
+    log_message(project_id, "SEPARATOR", "=" * 40, execution_log=True)
 
     # Restore the project source directory after execution
     restore_project_src(project_id)
@@ -154,20 +156,17 @@ def render_rmd_file(container_name, rmd_file, log_file, project_id):
     command = ["docker", "exec", container_name, "bash", "-c", render_command]
     result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-    # Write to log file in the logs directory
-    execution_log_file = os.path.join(LOGS_DIR, f"{project_id}_execution.log")
+    # Log rendering results
+    log_message(project_id, "FILE", f"File: {rmd_file}", execution_log=True)
     
-    with open(execution_log_file, "a") as log:
-        log.write(f"File: {rmd_file}\n")
-        if result.returncode == 0:
-            log.write("Rendering Successful:\n")
-            log.write(result.stdout + "\n")
-            execution_status = "Successful"
-        else:
-            log.write("Rendering Failed:\n")
-            log.write(result.stderr + "\n")
-            execution_status = "Failed"
-        log.write("=" * 40 + "\n")
+    if result.returncode == 0:
+        log_message(project_id, "SUCCESS", f"Rendering Successful:\n{result.stdout}", execution_log=True)
+        execution_status = "Successful"
+    else:
+        log_message(project_id, "ERROR", f"Rendering Failed:\n{result.stderr}", execution_log=True)
+        execution_status = "Failed"
+    
+    log_message(project_id, "SEPARATOR", "=" * 40, execution_log=True)
 
     # Restore the project source directory after execution
     restore_project_src(project_id)
@@ -237,8 +236,8 @@ def run_all_files_in_container(project_id):
 
     execution_end = time.time()
 
-    with open(log_file, "a") as log:
-        log.write(f"⏳ Total execution time for project {project_id}: {execution_end - execution_start:.2f} seconds\n")
+    # Log the total execution time
+    log_message(project_id, "TIME", f"⏳ Total execution time for project {project_id}: {execution_end - execution_start:.2f} seconds", execution_log=True)
 
     print(f"Execution completed for project {project_id}. Logs at {log_file}. Results stored in {CSV_FILE}")
 

@@ -3,13 +3,12 @@ import os
 import time
 
 # Base directory for all operations
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PIPELINE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Create necessary directories
-LOGS_DIR = os.path.join(BASE_DIR, "logs")
-REPOS_DIR = os.path.join(BASE_DIR, "repos")
-os.makedirs(LOGS_DIR, exist_ok=True)
-os.makedirs(REPOS_DIR, exist_ok=True)
+LOGS_DIR = "logs"
+REPOS_DIR = "repos"
+RESULTS_DIR = "results"
 
 def log_message(project_id, stage, message, execution_log=False):
     """Log a message with timestamp to console and file."""

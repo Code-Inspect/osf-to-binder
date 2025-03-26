@@ -1,5 +1,12 @@
-Automating_Reproducibility/*/
 __pycache__
-test
-*.zip
 .vscode/
+test/
+
+repos/*
+!repos/.gitkeep
+logs/*
+!logs/.gitkeep
+results/*
+!results/.gitkeep
+downloads/*
+!downloads/.gitkeep

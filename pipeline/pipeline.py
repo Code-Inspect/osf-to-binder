@@ -7,9 +7,8 @@ import time
 from osfclient.api import OSF
 import zipfile
 import glob
-import logging
 import argparse
-from utils import REPOS_DIR, log_message, BASE_DIR
+from utils import REPOS_DIR, log_message
 from run_code_in_container import build_and_run_container
 from execute_r_files_in_container import run_all_files_in_container, create_csv_file
 from flowr_dependency_query import process_project as extract_dependencies

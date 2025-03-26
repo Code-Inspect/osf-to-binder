@@ -5,9 +5,9 @@ import csv
 import shutil
 import time
 import pandas as pd
-from utils import BASE_DIR, REPOS_DIR, LOGS_DIR, log_message
+from utils import PIPELINE_DIR, REPOS_DIR, LOGS_DIR, RESULTS_DIR, log_message
 
-CSV_FILE = os.path.join(BASE_DIR, "execution_results.csv")  # CSV file at the base level
+CSV_FILE = os.path.join(RESULTS_DIR, "execution_results.csv")  # CSV file at the base level
 TIMEOUT = None  # the time to wait for the container to run the script. `int` for timout in seconds. None means no timeout.
 
 def create_csv_file():
@@ -180,7 +180,7 @@ def run_all_files_in_container(project_id):
     log_file = os.path.join(LOGS_DIR, f"{project_id}_execution.log")
 
     # Load CSV file
-    cleaned_csv_path = os.path.join(BASE_DIR, "project_id_r_code_file.csv")
+    cleaned_csv_path = os.path.join(PIPELINE_DIR, "project_id_r_code_file.csv")
     df_project_files = pd.read_csv(cleaned_csv_path)
 
     # Ensure the container is running

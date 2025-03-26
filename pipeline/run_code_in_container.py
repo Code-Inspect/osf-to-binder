@@ -2,8 +2,7 @@ import os
 import subprocess
 import sys
 import argparse
-from git import Repo
-from utils import log_message, BASE_DIR, REPOS_DIR
+from utils import log_message, REPOS_DIR
 
 def build_and_run_container(project_id, repo_only=False, build_and_run=False):
     """Builds and runs the repo2docker container for a project."""

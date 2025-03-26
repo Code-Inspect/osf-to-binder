@@ -31,7 +31,6 @@ def run_flowr_dependency_query(project_path):
     log_message(project_id, "DEPENDENCY EXTRACTION", f"📦 Running flowr_dependency_query.py for {src_path}...")
     
     try:
-        # Call the process_project function directly instead of using subprocess
         extract_dependencies(input_dir=src_path, output_file=dependency_file)
         log_message(project_id, "DEPENDENCY EXTRACTION", f"✅ Dependencies extracted to {dependency_file}")
         return True
@@ -65,9 +64,7 @@ def execute_r_scripts(project_id):
     """Executes R scripts in the container."""
     log_message(project_id, "R_EXECUTION", f"Executing R scripts in the container for project ID: {project_id}")
     try:
-        # Ensure CSV file is created before running
         create_csv_file()
-        # Call the run_all_files_in_container function directly
         run_all_files_in_container(project_id)
         return True
     except Exception as e:

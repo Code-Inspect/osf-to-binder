@@ -53,7 +53,6 @@ def run_docker_container(project_id, image_name, project_path):
     """Runs a Docker container from the built image."""
     _, container_name = get_image_and_container_name(project_id)
     
-    # Remove existing container if exists
     remove_existing_container(container_name)
     
     # Run the container
@@ -86,7 +85,6 @@ def build_repository(project_id):
             
         print(f"📦 Building repository for project '{project_id}'...")
         
-        # Use the build_docker_image function instead of duplicating the build command
         image_name = build_docker_image(project_id, project_path)
         if image_name:
             print(f"✅ Repository built successfully for project '{project_id}'.")
@@ -119,7 +117,7 @@ def run_container(project_id):
         log_message(project_id, "CONTAINER", f"❌ Failed to run container: {e}")
         return False
 
-def process_projects(project_ids, repo_only=False, build_and_run=False):
+def process_projects(project_ids, repo_only=False):
     """Processes multiple projects."""
     for project_id in project_ids:
         print(f"\n=== 🚀 Processing Project: '{project_id}' ===")
@@ -130,7 +128,7 @@ def process_projects(project_ids, repo_only=False, build_and_run=False):
                     print(f"✅ Repository built successfully for project '{project_id}'.")
                 else:
                     print(f"⚠️ Failed to build repository for project '{project_id}'.")
-            elif build_and_run:
+            else:
                 success = run_container(project_id)
                 if success:
                     print(f"✅ Container is running for project '{project_id}'.")
@@ -143,7 +141,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Build and Run Repo2Docker Containers")
     parser.add_argument("--project-id", nargs='+', help="List of project IDs or path to a file containing project IDs")
     parser.add_argument("--repo-only", action="store_true", help="Only build the repository without running the container")
-    parser.add_argument("--build-and-run", action="store_true", help="Build and run the container")
 
     args = parser.parse_args()
 
@@ -159,5 +156,4 @@ if __name__ == "__main__":
         print("❌ Error: No project IDs provided.")
         sys.exit(1)
 
-    # Process projects
-    process_projects(project_ids, repo_only=args.repo_only, build_and_run=args.build_and_run)
+    process_projects(project_ids, repo_only=args.repo_only)

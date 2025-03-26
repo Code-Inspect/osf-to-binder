@@ -136,10 +136,8 @@ def execute_r_file(container_name, r_file, log_file, project_id):
     
     log_message(project_id, "SEPARATOR", "=" * 40, execution_log=True)
 
-    # Restore the project source directory after execution
     restore_project_src(project_id)
 
-    # Append result to CSV
     log_execution_to_csv(project_id, r_file, execution_status)
 
 def render_rmd_file(container_name, rmd_file, log_file, project_id):
@@ -168,10 +166,8 @@ def render_rmd_file(container_name, rmd_file, log_file, project_id):
     
     log_message(project_id, "SEPARATOR", "=" * 40, execution_log=True)
 
-    # Restore the project source directory after execution
     restore_project_src(project_id)
 
-    # Append result to CSV
     log_execution_to_csv(project_id, rmd_file, execution_status)
     
 def run_all_files_in_container(project_id):

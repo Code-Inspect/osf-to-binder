@@ -121,7 +121,7 @@ def generate_requirements_file(dependencies, output_file):
 
     print(f"Dependencies file created: {output_file}")
 
-def process_project(input_dir, output_file):
+def extract_dependencies(input_dir, output_file):
     """Processes a project to generate a dependencies file."""
     dependencies = aggregate_dependencies(input_dir)
     generate_requirements_file(dependencies, output_file)
@@ -136,6 +136,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     print(f"Processing project: {args.input_dir}")
-    process_project(args.input_dir, args.output_file)
+    extract_dependencies(args.input_dir, args.output_file)
 
     print("\nProject processed successfully.")

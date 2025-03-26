@@ -9,10 +9,10 @@ import zipfile
 import glob
 import logging
 import argparse
-from utils import REPOS_DIR
-
-# Base directory
-BASE_DIR = "Automating_Reproducibility"
+from utils import REPOS_DIR, log_message, BASE_DIR
+from run_code_in_container import build_and_run_container
+from execute_r_files_in_container import run_all_files_in_container, create_csv_file
+from flowr_dependency_query import process_project as extract_dependencies
 
 # Global dictionary to store loggers
 project_loggers = {}
@@ -85,19 +85,13 @@ def run_flowr_dependency_query(project_path):
         return False
 
     log_message(project_id, "DEPENDENCY EXTRACTION", f"📦 Running flowr_dependency_query.py for {src_path}...")
-
-    script_path = os.path.join(BASE_DIR, "flowr_dependency_query.py")
-    command = [
-        "uv", "run", "python3", script_path,
-        "--input-dir", src_path,
-        "--output-file", dependency_file
-    ]
-
+    
     try:
-        subprocess.run(command, check=True)
+        # Call the process_project function directly instead of using subprocess
+        extract_dependencies(input_dir=src_path, output_file=dependency_file)
         log_message(project_id, "DEPENDENCY EXTRACTION", f"✅ Dependencies extracted to {dependency_file}")
         return True
-    except subprocess.CalledProcessError as e:
+    except Exception as e:
         log_message(project_id, "DEPENDENCY EXTRACTION", f"❌ Failed to extract dependencies: {e}")
         return False
 
@@ -331,9 +325,10 @@ def build_repository(project_id):
     """Builds the repository using repo2docker."""
     log_message(project_id, "BUILD", f"=== Building repository for project: {project_id} ===")
     try:
-        subprocess.run(["python3", os.path.join(BASE_DIR, "run_code_in_container.py"), "--project-id", project_id, "--repo-only"], check=True)
+        # Call the build_and_run_container function directly with repo_only=True
+        build_and_run_container(project_id, repo_only=True)
         return True
-    except subprocess.CalledProcessError as e:
+    except Exception as e:
         log_message(project_id, "BUILD", f"❌ Failed to build repository: {e}")
         return False
 
@@ -341,9 +336,10 @@ def run_container(project_id):
     """Runs the container for the project."""
     log_message(project_id, "CONTAINER", f"=== Running container for project: {project_id} ===")
     try:
-        subprocess.run(["python3", os.path.join(BASE_DIR, "run_code_in_container.py"), "--project-id", project_id, "--build-and-run"], check=True)
+        # Call the build_and_run_container function directly with build_and_run=True
+        build_and_run_container(project_id, build_and_run=True)
         return True
-    except subprocess.CalledProcessError as e:
+    except Exception as e:
         log_message(project_id, "CONTAINER", f"❌ Failed to run container: {e}")
         return False
 
@@ -351,9 +347,12 @@ def execute_r_scripts(project_id):
     """Executes R scripts in the container."""
     log_message(project_id, "R_EXECUTION", f"Executing R scripts in the container for project ID: {project_id}")
     try:
-        subprocess.run(["python3", os.path.join(BASE_DIR, "execute_r_files_in_container.py"), project_id], check=True)
+        # Ensure CSV file is created before running
+        create_csv_file()
+        # Call the run_all_files_in_container function directly
+        run_all_files_in_container(project_id)
         return True
-    except subprocess.CalledProcessError as e:
+    except Exception as e:
         log_message(project_id, "R_EXECUTION", f"❌ Failed to execute R scripts: {e}")
         return False
 

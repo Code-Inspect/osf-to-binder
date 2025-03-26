@@ -4,8 +4,8 @@ import zipfile
 import glob
 import argparse
 from utils import REPOS_DIR, DOWNLOADS_DIR, log_message
-from build_container import build_repository, run_container
-from build_repo import create_repo2docker_files
+from deploy_container import build_and_run
+from create_repository import create_repo2docker_files
 from execute_r_files_in_container import run_all_files_in_container, create_csv_file
 from flowr_dependency_query import extract_dependencies
 from osf_zip_file_download import download_project
@@ -107,15 +107,11 @@ def process_project(project_id):
         container_setup_end = time.time()
         log_message(project_id, "REPO2DOCKER SETUP", f"✅ Repo2Docker files created successfully in {container_setup_end - container_setup_start:.2f} seconds.")
 
-        # Step 4: Build Repository
-        if not build_repository(project_id):
+        # Step 4: Build and Run Container
+        if not build_and_run(project_id):
             return False
 
-        # Step 5: Run Container
-        if not run_container(project_id):
-            return False
-
-        # Step 6: Execute R Scripts
+        # Step 5: Execute R Scripts
         if not execute_r_scripts(project_id):
             return False
 

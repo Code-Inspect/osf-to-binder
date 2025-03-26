@@ -5,29 +5,29 @@ import csv
 import shutil
 import time
 import pandas as pd
-from utils import PIPELINE_DIR, REPOS_DIR, LOGS_DIR, RESULTS_DIR, log_message
+from utils import METADATA_DIR, REPOS_DIR, LOGS_DIR, RESULTS_DIR, log_message
 
-CSV_FILE = os.path.join(RESULTS_DIR, "execution_results.csv")  # CSV file at the base level
+RESULTS_FILE = os.path.join(RESULTS_DIR, "execution_results.csv")  # CSV file at the base level
 TIMEOUT = None  # the time to wait for the container to run the script. `int` for timout in seconds. None means no timeout.
 
 def create_csv_file():
     """Creates the CSV file with headers if it doesn't exist."""
-    if not os.path.isfile(CSV_FILE):
-        with open(CSV_FILE, "w", newline="") as csvfile:
+    if not os.path.isfile(RESULTS_FILE):
+        with open(RESULTS_FILE, "w", newline="") as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(["Project ID", "R/Rmd Script", "Execution Status"])
-        print(f"✅ Created new execution results file: {CSV_FILE}")
+        print(f"✅ Created new execution results file: {RESULTS_FILE}")
     else:
-        print(f"📂 Execution results will be appended to: {CSV_FILE}")
+        print(f"📂 Execution results will be appended to: {RESULTS_FILE}")
 
 
 def log_execution_to_csv(project_id, file_name, status):
     """Logs execution results to a global CSV file."""
-    with open(CSV_FILE, "a", newline="") as csvfile:
+    with open(RESULTS_FILE, "a", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow([project_id, file_name, status])
 
-    print(f"✅ Logged execution result for {file_name} in {CSV_FILE}")
+    print(f"✅ Logged execution result for {file_name} in {RESULTS_FILE}")
 
 
 def list_files(container_name, directory, extensions):
@@ -180,7 +180,7 @@ def run_all_files_in_container(project_id):
     log_file = os.path.join(LOGS_DIR, f"{project_id}_execution.log")
 
     # Load CSV file
-    cleaned_csv_path = os.path.join(PIPELINE_DIR, "project_id_r_code_file.csv")
+    cleaned_csv_path = os.path.join(METADATA_DIR, "project_id_r_code_file.csv")
     df_project_files = pd.read_csv(cleaned_csv_path)
 
     # Ensure the container is running
@@ -239,7 +239,7 @@ def run_all_files_in_container(project_id):
     # Log the total execution time
     log_message(project_id, "TIME", f"⏳ Total execution time for project {project_id}: {execution_end - execution_start:.2f} seconds", execution_log=True)
 
-    print(f"Execution completed for project {project_id}. Logs at {log_file}. Results stored in {CSV_FILE}")
+    print(f"Execution completed for project {project_id}. Logs at {log_file}. Results stored in {RESULTS_FILE}")
 
 
 def process_projects(project_ids):

@@ -1,6 +1,4 @@
 import os
-import sys
-import subprocess
 import requests
 from git import Repo
 import time
@@ -8,10 +6,11 @@ from osfclient.api import OSF
 import zipfile
 import glob
 import argparse
-from utils import REPOS_DIR, log_message
+from utils import REPOS_DIR, DOWNLOADS_DIR, log_message
 from run_code_in_container import build_and_run_container
 from execute_r_files_in_container import run_all_files_in_container, create_csv_file
 from flowr_dependency_query import process_project as extract_dependencies
+from osf_zip_file_download import download_project
 
 def run_flowr_dependency_query(project_path):
     """Extract dependencies using flowr_dependency_query.py if R or Rmd scripts exist."""
@@ -42,89 +41,21 @@ def run_flowr_dependency_query(project_path):
         log_message(project_id, "DEPENDENCY EXTRACTION", f"❌ Failed to extract dependencies: {e}")
         return False
 
-def download_file(file, base_path, project_id, sub_path):
-    """Downloads a file while preserving its directory structure."""
-    file_path = os.path.join(base_path, f"{project_id}_src", sub_path, file.name)
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-    log_message(project_id, "DOWNLOAD", f"📥 Downloading '{file.name}' to {file_path}...")
-    with open(file_path, 'wb') as f:
-        file.write_to(f)
-    log_message(project_id, "DOWNLOAD", f"✅ Downloaded '{file.name}' successfully.")
-
-def download_folder(folder, base_path, project_id, sub_path=""):
-    """Recursively downloads a folder and maintains directory structure."""
-    folder_path = os.path.join(base_path, f"{project_id}_src", sub_path, folder.name)
-    os.makedirs(folder_path, exist_ok=True)
-
-    log_message(project_id, "DOWNLOAD", f"📁 Downloading folder '{folder.name}' to {folder_path}...")
-
-    for file in folder.files:
-        download_file(file, base_path, project_id, os.path.join(sub_path, folder.name))
-
-    for subfolder in folder.folders:
-        download_folder(subfolder, base_path, project_id, os.path.join(sub_path, folder.name))
-
-def download_project(project_id, download_directory):
-    """Downloads an OSF project, preserving directory structure."""
-    project_path = os.path.join(download_directory, f"{project_id}_repo")
-    project_id_clean = project_id.replace("_repo", "")
-    src_path = os.path.join(project_path, f"{project_id_clean}_src")
-
-    if os.path.exists(src_path):
-        log_message(project_id, "DOWNLOAD", f"⏭️ Project '{project_id}' already exists at {src_path}. Skipping download.")
-        return project_path
-
-    osf = OSF()
-    retries = 3
-    wait_time = 20
-
-    for attempt in range(retries):
-        try:
-            project = osf.project(project_id)
-            storage = project.storage('osfstorage')
-            break
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 429:
-                log_message(project_id, "DOWNLOAD", f"🚨 Rate limit hit. Retrying in {wait_time} seconds... (Attempt {attempt + 1}/{retries})")
-                time.sleep(wait_time)
-            else:
-                log_message(project_id, "DOWNLOAD", f"❌ HTTP error: {e.response.status_code}")
-                return None
-        except Exception as e:
-            log_message(project_id, "DOWNLOAD", f"❌ Unexpected error: {e}")
-            return None
-    else:
-        log_message(project_id, "DOWNLOAD", f"❌ Failed to download project after {retries} attempts.")
-        return None
-
-    os.makedirs(project_path, exist_ok=True)
-    os.makedirs(src_path, exist_ok=True)
-
-    log_message(project_id, "DOWNLOAD", f"📥 Starting download of all contents in project '{project_id}'...")
-
-    for folder in storage.folders:
-        download_folder(folder, project_path, project_id_clean)
-
-    log_message(project_id, "DOWNLOAD", "✅ Project download completed.")
-    return project_path
-
-def unzip_project(project_id, download_directory):
+def unzip_project(project_id):
     """Unzips a project from the download directory."""
-    zip_file = os.path.join("downloads", f"{project_id}.zip")
-    project_path = os.path.join(download_directory, f"{project_id}_repo")
+    zip_file = os.path.join(DOWNLOADS_DIR, f"{project_id}.zip")
+    project_path = os.path.join(REPOS_DIR, f"{project_id}_repo")
     src_path = os.path.join(project_path, f"{project_id}_src")
 
-    if os.path.exists(src_path) and os.listdir(src_path):
-        log_message(project_id, "DOWNLOAD", f"⏭️ Project '{project_id}' already exists at {src_path}. Skipping download.")
+    if os.path.exists(project_path) and os.listdir(project_path):
+        log_message(project_id, "DOWNLOAD", f"⏭️ Project '{project_id}' already exists at {project_path}. Skipping download and extraction.")
         return project_path
     
     if not os.path.exists(zip_file):
-        log_message(project_id, "DOWNLOAD", f"❌ Zip file not found at '{zip_file}'. Falling back to OSF download.")
-        return download_project(project_id, download_directory)
+        download_project(project_id)
     
-    os.makedirs(project_path, exist_ok=True)
-    os.makedirs(src_path, exist_ok=True)
+    os.makedirs(project_path, exist_ok=False)
+    os.makedirs(src_path, exist_ok=False)
     
     with zipfile.ZipFile(zip_file, 'r') as zip_ref:
         log_message(project_id, "DOWNLOAD", f"📦 Extracting {zip_file} to {src_path}...")
@@ -311,7 +242,7 @@ def process_project(project_id):
     try:
         # Step 1: Download/Unzip Project
         project_download_start = time.time()
-        project_path = unzip_project(project_id, REPOS_DIR)
+        project_path = unzip_project(project_id)
 
         if not project_path:
             log_message(project_id, "DOWNLOAD", f"❌ Failed to download/unzip project '{project_id}'. Skipping further processing.")
@@ -358,24 +289,11 @@ def process_project(project_id):
         log_message(project_id, "ERROR", f"❌ Error occurred: {e}")
         return False
 
-def setup_environment():
-    """Sets up the Python environment using uv."""
-    print("Setting up the environment using uv...")
-    try:
-        subprocess.run(["uv", "sync"], check=True)
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Failed to sync environment using uv: {e}")
-        return False
-
 def main():
     parser = argparse.ArgumentParser(description='Process OSF projects for reproducibility testing.')
     parser.add_argument('input', help='OSF project ID or file containing project IDs')
     parser.add_argument('--github', action='store_true', help='Create GitHub repositories for the projects')
     args = parser.parse_args()
-
-    if not setup_environment():
-        sys.exit(1)
 
     project_ids = []
     if os.path.isfile(args.input):

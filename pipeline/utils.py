@@ -1,14 +1,14 @@
-# utils.py
 import os
 import time
 
-# Base directory for all operations
 PIPELINE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Create necessary directories
 LOGS_DIR = "logs"
 REPOS_DIR = "repos"
 RESULTS_DIR = "results"
+DOWNLOADS_DIR = "downloads"
+METADATA_DIR = "metadata"
+
 
 def log_message(project_id, stage, message, execution_log=False):
     """Log a message with timestamp to console and file."""

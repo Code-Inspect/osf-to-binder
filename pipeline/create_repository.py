@@ -107,7 +107,7 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
         readme.write("## Start Container Locally\n")
         readme.write("To start the container locally:\n\n")
         readme.write("```bash\n")
-        readme.write(f"docker run -p 8888:8888 --name {repo_name}-test -d {repo_name}-test\n")
+        readme.write(f"docker run -p 8888:8888 --name {repo_name} -d {repo_name}\n")
         readme.write("```\n\n")
         readme.write(
             "This repository demonstrates how a project from OSF can be containerized and tested using Binder. We facilitate a one-click launch of the OSF project, allowing anyone to browse, execute the code, and verify or compare the results from the associated research paper. This aligns with the objectives of the **CodeInspector project**, where we aim to enable **browser-based reproducibility and evaluation of open science projects**.\n\n")

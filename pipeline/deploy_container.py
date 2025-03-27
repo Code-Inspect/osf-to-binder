@@ -14,7 +14,7 @@ def check_project_exists(project_id):
 
 def get_image_and_container_name(project_id):
     """Returns the image and container names for a project."""
-    image_name = f"repo2docker-{project_id}-test"
+    image_name = f"repo2docker-{project_id}"
     return image_name, image_name  # Using same name for both
 
 def build_docker_image(project_id, project_path):

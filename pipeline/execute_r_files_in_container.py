@@ -162,7 +162,7 @@ def render_rmd_file(container_name, rmd_file, log_file, project_id):
     
 def run_all_files_in_container(project_id):
     """Automates execution of only the R and Rmd files listed in the CSV for the given project."""
-    container_name = f"repo2docker-{project_id}-test"
+    container_name = f"repo2docker-{project_id}"
     log_file = os.path.join(LOGS_DIR, f"{project_id}_execution.log")
 
     # Load CSV file

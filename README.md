@@ -65,6 +65,7 @@ The tool will:
 - Execute R scripts in the container
 - Log all operations and results
 
-## License
 
-[TODO]
+---
+
+This work was funded by the German Research Foundation (DFG) under project No. 504226141.

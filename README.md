@@ -36,7 +36,7 @@ brew install uv
 
 2. Clone the repository:
 ```bash
-git clone https://github.com/TODO/osf-to-binder.git
+git clone https://github.com/Code-Inspect/osf-to-binder
 cd osf-to-binder
 ```
 

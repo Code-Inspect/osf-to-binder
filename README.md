@@ -20,7 +20,7 @@ osf-to-binder/
 
 - Python 3.12 or higher
 - `uv` python package manager
-- Git
+- Git LFS (https://git-lfs.com/)
 - Docker
 
 ## Installation

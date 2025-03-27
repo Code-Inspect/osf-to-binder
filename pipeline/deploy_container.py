@@ -2,7 +2,7 @@ import os
 import subprocess
 import sys
 import argparse
-from utils import log_message, REPOS_DIR
+from utils import log_message, REPOS_DIR, LOGS_DIR
 
 def check_project_exists(project_id):
     """Checks if the project directory exists and returns the path if it does."""
@@ -33,7 +33,8 @@ def build_docker_image(project_id, project_path):
     log_message(project_id, "CONTAINER BUILD", "⚙️ Building Docker container...")
     
     try:
-        subprocess.run(build_command, check=True)
+        repo2docker_log_file = os.path.join(LOGS_DIR, f"{project_id}_repo2docker.log")
+        subprocess.run(build_command, check=True, stdout=open(repo2docker_log_file, "w"), stderr=subprocess.STDOUT)
         log_message(project_id, "CONTAINER BUILD", "✅ Container built successfully.")
         return image_name
     except subprocess.CalledProcessError as e:

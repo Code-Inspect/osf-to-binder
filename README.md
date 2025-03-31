@@ -18,7 +18,6 @@ osf-to-binder/
 
 ## Prerequisites
 
-- Python 3.12 or higher
 - `uv` python package manager
 - Git LFS (https://git-lfs.com/)
 - Docker
@@ -40,21 +39,16 @@ git clone https://github.com/Code-Inspect/osf-to-binder
 cd osf-to-binder
 ```
 
-3. Install dependencies using `uv`:
-```bash
-uv sync
-```
-
 ## Usage
 
 1. Configure your analysis settings in the `metadata` directory
 2. Run the analysis pipeline:
 ```bash
-python pipeline/run.py <project_id>  # Process a single project
+uv run pipeline/run.py <project_id>  # Process a single project
 
 # OR
 
-python pipeline/run.py metadata/project_ids.txt  # Process multiple projects from a file
+uv run pipeline/run.py metadata/project_ids.txt  # Process multiple projects from a file
 ```
 
 The tool will:

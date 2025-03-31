@@ -65,18 +65,18 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
  
     os.remove(dependencies_file)
 
-    postbuild_path = os.path.join(project_dir, "postBuild")
-    with open(postbuild_path, "w") as postbuild:
-        postbuild.write("#!/bin/bash\n\n")
-        postbuild.write("# Update system and install required libraries\n")
-        postbuild.write("# Install R-remotes version 2.5.0\n")
-        postbuild.write("R -e \"install.packages('remotes', repos = 'http://cran.us.r-project.org', type = 'source')\"\n")
-        postbuild.write("R -e \"remotes::install_version('remotes', version = '2.5.0', repos = 'http://cran.us.r-project.org')\"\n")
-        postbuild.write("\n")
-        postbuild.write("# Install FlowR\n")
-        postbuild.write("R -e \"remotes::install_github('flowr-analysis/rstudio-addin-flowr')\"\n")
-
-    os.chmod(postbuild_path, 0o755)
+    # postbuild_path = os.path.join(project_dir, "postBuild")
+    # with open(postbuild_path, "w") as postbuild:
+    #     postbuild.write("#!/bin/bash\n\n")
+    #     postbuild.write("# Update system and install required libraries\n")
+    #     postbuild.write("# Install R-remotes version 2.5.0\n")
+    #     postbuild.write("R -e \"install.packages('remotes', repos = 'http://cran.us.r-project.org', type = 'source')\"\n")
+    #     postbuild.write("R -e \"remotes::install_version('remotes', version = '2.5.0', repos = 'http://cran.us.r-project.org')\"\n")
+    #     postbuild.write("\n")
+    #     postbuild.write("# Install FlowR\n")
+    #     postbuild.write("R -e \"remotes::install_github('flowr-analysis/rstudio-addin-flowr')\"\n")
+    #
+    # os.chmod(postbuild_path, 0o755)
 
     osf = OSF()
     try:
@@ -90,31 +90,56 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
 
     readme_path = os.path.join(project_dir, "README.md")
     with open(readme_path, "w") as readme:
-        readme.write(f"# Automated reproducibility test for the OSF project, {project_id}\n\n")
-        readme.write("--- \n")
-        readme.write(f"## OSF Project metadata: \n")
-        readme.write(f"{project_title}\n\n")
-        readme.write(f"{project_description}\n\n")
-        readme.write("--- \n")
+        readme.write(f"# Binderised version of the OSF project - {project_id}\n\n")
+        readme.write("---\n")
+        readme.write("## OSF Project Metadata:\n\n")
+        readme.write(f"**Project Title:** {project_title}\n\n")
+        readme.write(f"**Project Description:**\n> {project_description}\n\n")
+        readme.write(f"**Original OSF Page:** [https://osf.io/{project_id}/](https://osf.io/{project_id}/)\n\n")
+        readme.write("---\n\n")
         readme.write(
-            f"This repository was auto-generated as part of testing reproducibility of open science projects hosted on OSF. Original OSF page: [https://osf.io/{project_id}/](https://osf.io/{project_id}/)\n\n")
-        readme.write(f"The contents of the folder {project_id}_src was cloned from the OSF project on 12-03-2025. The files, DESCRIPTION and postBuild has been added automatically inorder to make this project Binder ready.\n\n")
-        readme.write("## How to Launch\n")
+            "This repository was automatically generated as part of a project to test the reproducibility of open science projects hosted on the Open Science Framework (OSF).\n\n"
+        )
         readme.write(
-            f"🚀 **Click below to launch the project on MyBinder:**  \n[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Meet261/{repo_name}/HEAD?urlpath=rstudio)\n\n")
+            f"**Important Note:** The contents of the `{project_id}_src` folder were cloned from the OSF project on **12-03-2025**. Any changes made to the original OSF project after this date will not be reflected in this repository.\n\n"
+        )
         readme.write(
-            f"🚀 **Click below to launch the project on the NFDI JupyterHub:**  \n[![NFDI](https://nfdi-jupyter.de/images/nfdi_badge.svg)](https://hub.nfdi-jupyter.de/r2d/gh/Meet261/{repo_name}/HEAD?urlpath=rstudio)\n\n")
-        readme.write("## Start Container Locally\n")
-        readme.write("To start the container locally:\n\n")
-        readme.write("```bash\n")
-        readme.write(f"docker run -p 8888:8888 --name {repo_name} -d {repo_name}\n")
-        readme.write("```\n\n")
+            "The `DESCRIPTION` file was automatically added to make this project Binder-ready. For more information on how R-based OSF projects are containerized, please refer to the `osf-to-binder` GitHub repository: [https://github.com/Code-Inspect/osf-to-binder.git](https://github.com/Code-Inspect/osf-to-binder.git)\n\n"
+        )
+        readme.write("## How to Launch:\n\n")
+        readme.write("**Launch in your Browser:**\n\n")
         readme.write(
-            "This repository demonstrates how a project from OSF can be containerized and tested using Binder. We facilitate a one-click launch of the OSF project, allowing anyone to browse, execute the code, and verify or compare the results from the associated research paper. This aligns with the objectives of the **CodeInspector project**, where we aim to enable **browser-based reproducibility and evaluation of open science projects**.\n\n")
+            f"🚀 **MyBinder:** [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Meet261/{repo_name}/HEAD?urlpath=rstudio)\n\n"
+        )
         readme.write(
-            "By integrating **OSF** and **Binder**, we aim to enhance transparency and reproducibility in computational social science and beyond. This repository serves as an example of how research projects can be packaged and shared in a fully executable, browser-based environment.\n\n")
-        readme.write("--- \n\n")
-        readme.write("This work was funded by the German Research Foundation (DFG) under project No. 504226141.")
+            "   * This will launch the project in an interactive RStudio environment in your web browser.\n"
+            "   * Please note that Binder may take a few minutes to build the environment.\n\n"
+        )
+        readme.write(
+            f"🚀 **NFDI JupyterHub:** [![NFDI](https://nfdi-jupyter.de/images/nfdi_badge.svg)](https://hub.nfdi-jupyter.de/r2d/gh/Meet261/{repo_name}/HEAD?urlpath=rstudio)\n\n"
+        )
+        readme.write("   * This will launch the project in an interactive RStudio environment on the NFDI JupyterHub platform.\n\n")
+
+        readme.write(f"**Access Downloaded Data:**\n")
+        readme.write(f"The downloaded data from the OSF project is located in the `{project_id}_src` folder.\n\n")
+
+        readme.write("## Start Container Locally (Docker):\n\n")
+        readme.write("To run this project locally using Docker:\n\n")
+        readme.write("1.  **Run the Docker container:**\n\n")
+        readme.write("    ```bash\n")
+        readme.write(f"    docker run -p 8888:8888 --name {repo_name}-test -d {repo_name}\n")
+        readme.write("    ```\n\n")
+        readme.write("    * This command starts the container in detached mode and maps port 8888 to your local machine.\n\n")
+        readme.write("2.  **Access RStudio:**\n\n")
+        readme.write("    Open your web browser and navigate to `http://localhost:8888`.\n\n")
+        readme.write("3.  **Stop the Docker container:**\n\n")
+        readme.write("    ```bash\n")
+        readme.write(f"    docker stop {repo_name}-test\n")
+        readme.write("    ```\n\n")
+        readme.write("    ```bash\n")
+        readme.write(f"    docker rm {repo_name}-test\n")
+        readme.write("    ```\n\n")
+        readme.write("---\n")
 
     if add_github_repo:
         if not create_github_repo(repo_name):

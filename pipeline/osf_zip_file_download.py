@@ -1,21 +1,41 @@
 import pandas as pd
-import subprocess
+import requests
 from tqdm import tqdm
 from utils import DOWNLOADS_DIR, METADATA_DIR, log_message
+import os
 
 
 def download_project(project_id):
     log_message(project_id, "DOWNLOAD", f"Downloading project {project_id} from OSF...")
     url = f"https://files.osf.io/v1/resources/{project_id}/providers/osfstorage/?zip="
     file_name = f"{DOWNLOADS_DIR}/{project_id}.zip"
-    # the nc flag is used to skip the download if the file already exists (no clobber)
-    result = subprocess.run(
-        ["wget", "-nc", "-O", file_name, url], capture_output=True, text=True
-    )
-    if result.returncode == 0:
+
+    # Skip if file already exists
+    if os.path.exists(file_name):
+        log_message(project_id, "DOWNLOAD", f"File already exists: {file_name}")
+        return
+
+    try:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+
+        # Download with progress bar
+        with open(file_name, "wb") as f:
+            with tqdm(
+                desc=f"Downloading {project_id}",
+                unit="iB",
+                unit_scale=True,
+                unit_divisor=1024,
+                leave=True,
+            ) as pbar:
+                for chunk in response.iter_content(chunk_size=1024*1024):  # 1MB chunks
+                    if chunk:  # filter out keep-alive new chunks
+                        size = f.write(chunk)
+                        pbar.update(size)
+
         log_message(project_id, "DOWNLOAD", f"✅ Download completed: {file_name}")
-    else:
-        log_message(project_id, "DOWNLOAD", f"❌ Download failed: {result.stderr}")
+    except requests.exceptions.RequestException as e:
+        log_message(project_id, "DOWNLOAD", f"❌ Download failed: {str(e)}")
 
 
 def download_all_projects():

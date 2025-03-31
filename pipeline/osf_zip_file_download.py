@@ -34,8 +34,16 @@ def download_project(project_id):
                         pbar.update(size)
 
         log_message(project_id, "DOWNLOAD", f"✅ Download completed: {file_name}")
-    except requests.exceptions.RequestException as e:
-        log_message(project_id, "DOWNLOAD", f"❌ Download failed: {str(e)}")
+    except BaseException as e:
+        # remove the uncomplete zip file
+        if os.path.exists(file_name):
+            os.remove(file_name)
+        if isinstance(e, requests.exceptions.RequestException):
+            # continue the program
+            log_message(project_id, "DOWNLOAD", f"❌ Download failed: {str(e)}")
+        else:
+            # Re-raise the exception to stop the program
+            raise 
 
 
 def download_all_projects():

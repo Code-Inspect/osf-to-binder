@@ -122,23 +122,6 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
 
         readme.write(f"**Access Downloaded Data:**\n")
         readme.write(f"The downloaded data from the OSF project is located in the `{project_id}_src` folder.\n\n")
-
-        readme.write("## Start Container Locally (Docker):\n\n")
-        readme.write("To run this project locally using Docker:\n\n")
-        readme.write("1.  **Run the Docker container:**\n\n")
-        readme.write("    ```bash\n")
-        readme.write(f"    docker run -p 8888:8888 --name {repo_name}-test -d {repo_name}\n")
-        readme.write("    ```\n\n")
-        readme.write("    * This command starts the container in detached mode and maps port 8888 to your local machine.\n\n")
-        readme.write("2.  **Access RStudio:**\n\n")
-        readme.write("    Open your web browser and navigate to `http://localhost:8888`.\n\n")
-        readme.write("3.  **Stop the Docker container:**\n\n")
-        readme.write("    ```bash\n")
-        readme.write(f"    docker stop {repo_name}-test\n")
-        readme.write("    ```\n\n")
-        readme.write("    ```bash\n")
-        readme.write(f"    docker rm {repo_name}-test\n")
-        readme.write("    ```\n\n")
         readme.write("---\n")
 
     if add_github_repo:

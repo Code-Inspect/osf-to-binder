@@ -2,11 +2,11 @@ import os
 import subprocess
 import sys
 import argparse
-from utils import log_message, REPOS_DIR, LOGS_DIR
+from utils import log_message, LOGS_DIR, get_project_path
 
 def check_project_exists(project_id):
     """Checks if the project directory exists and returns the path if it does."""
-    project_path = os.path.join(REPOS_DIR, f"{project_id}_repo")
+    project_path = get_project_path(project_id)
     if not os.path.exists(project_path):
         log_message(project_id, "CONTAINER BUILD", f"❌ Project directory not found at '{project_path}'")
         return None

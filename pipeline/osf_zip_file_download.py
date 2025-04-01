@@ -1,8 +1,9 @@
 import pandas as pd
 import requests
 from tqdm import tqdm
-from utils import DOWNLOADS_DIR, METADATA_DIR, log_message
+from utils import DOWNLOADS_DIR, METADATA_DIR, log_message, get_zip_file_path, get_project_path, get_src_path
 import os
+import zipfile
 
 
 def download_project(project_id):
@@ -57,6 +58,28 @@ def download_all_projects():
         download_project(project_id)
     print("All downloads completed.")
 
+
+def unzip_project(project_id):
+    """Unzips a project from the download directory. Downloads the project if it doesn't exist."""
+    zip_file = get_zip_file_path(project_id)
+    project_path = get_project_path(project_id)
+    src_path = get_src_path(project_id)
+
+    if os.path.exists(src_path) and os.listdir(src_path):
+        log_message(project_id, "DOWNLOAD", f"⏭️ Project '{project_id}' already exists at {src_path}. Skipping download and extraction.")
+        return project_path
+    
+    if not os.path.exists(zip_file):
+        download_project(project_id)
+    
+    os.makedirs(project_path, exist_ok=True)
+    os.makedirs(src_path, exist_ok=False)
+    
+    with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+        log_message(project_id, "DOWNLOAD", f"📦 Extracting {zip_file} to {src_path}...")
+        zip_ref.extractall(src_path)
+    
+    return project_path
 
 if __name__ == "__main__":
     download_all_projects()

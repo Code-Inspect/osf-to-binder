@@ -1,20 +1,19 @@
 import os
 import time
-import zipfile
 import glob
 import argparse
-from utils import REPOS_DIR, DOWNLOADS_DIR, log_message
+from utils import log_message, get_src_path
 from deploy_container import build_and_run
 from create_repository import create_repo2docker_files
 from execute_r_files_in_container import execute_r_scripts
 from flowr_dependency_query import extract_dependencies
-from osf_zip_file_download import download_project
+from osf_zip_file_download import unzip_project
 
 def run_flowr_dependency_query(project_path):
     """Extract dependencies using flowr_dependency_query.py if R or Rmd scripts exist."""
     dependency_file = os.path.join(project_path, "dependencies.txt")
     project_id = os.path.basename(project_path).replace("_repo", "")
-    src_path = os.path.join(project_path, f"{project_id}_src")
+    src_path = get_src_path(project_id)
 
     r_scripts = glob.glob(os.path.join(src_path, "**", "*.R"), recursive=True) + \
                 glob.glob(os.path.join(src_path, "**", "*.r"), recursive=True) + \
@@ -37,28 +36,6 @@ def run_flowr_dependency_query(project_path):
     except Exception as e:
         log_message(project_id, "DEPENDENCY EXTRACTION", f"❌ Failed to extract dependencies: {e}")
         return False
-
-def unzip_project(project_id):
-    """Unzips a project from the download directory."""
-    zip_file = os.path.join(DOWNLOADS_DIR, f"{project_id}.zip")
-    project_path = os.path.join(REPOS_DIR, f"{project_id}_repo")
-    src_path = os.path.join(project_path, f"{project_id}_src")
-
-    if os.path.exists(project_path) and os.listdir(project_path):
-        log_message(project_id, "DOWNLOAD", f"⏭️ Project '{project_id}' already exists at {project_path}. Skipping download and extraction.")
-        return project_path
-    
-    if not os.path.exists(zip_file):
-        download_project(project_id)
-    
-    os.makedirs(project_path, exist_ok=False)
-    os.makedirs(src_path, exist_ok=False)
-    
-    with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-        log_message(project_id, "DOWNLOAD", f"📦 Extracting {zip_file} to {src_path}...")
-        zip_ref.extractall(src_path)
-    
-    return project_path
 
 
 def process_project(project_id):

@@ -26,3 +26,15 @@ def log_message(project_id, stage, message, execution_log=False):
     log_file = os.path.join(LOGS_DIR, f"{project_id}{'_execution' if execution_log else ''}.log")
     with open(log_file, "a") as f:
         f.write(log_entry + "\n")
+
+def get_project_path(project_id):
+    """Returns the path to the project repo directory."""
+    return os.path.join(REPOS_DIR, f"{project_id}_repo")
+
+def get_src_path(project_id):
+    """Returns the path to the project source directory."""
+    return os.path.join(get_project_path(project_id), f"{project_id}_src")
+
+def get_zip_file_path(project_id):
+    """Returns the path to the project zip file."""
+    return os.path.join(DOWNLOADS_DIR, f"{project_id}.zip")

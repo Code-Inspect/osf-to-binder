@@ -5,7 +5,8 @@ import csv
 import shutil
 import time
 import pandas as pd
-from utils import METADATA_DIR, REPOS_DIR, LOGS_DIR, RESULTS_DIR, log_message
+from utils import METADATA_DIR, LOGS_DIR, RESULTS_DIR, log_message, get_src_path
+from osf_zip_file_download import unzip_project
 
 RESULTS_FILE = os.path.join(RESULTS_DIR, "execution_results.csv")  # CSV file at the base level
 TIMEOUT = None  # the time to wait for the container to run the script. `int` for timout in seconds. None means no timeout.
@@ -37,61 +38,28 @@ def list_files(container_name, directory, extensions):
     return [file for file in files if file]
 
 
-def backup_project_src(project_id):
-    """Backs up the project source directory."""
-    project_path = os.path.join(REPOS_DIR, f"{project_id}_repo")
-    src_path = os.path.join(project_path, f"{project_id}_src")
-    backup_path = os.path.join(project_path, f"{project_id}_src_backup")
-
-    log_message(project_id, "R EXECUTION", f"📂 Creating backup of {src_path} in {backup_path}...")
-
-    # Ensure the source folder exists
-    if not os.path.exists(src_path):
-        log_message(project_id, "R EXECUTION", f"❌ Error: Source directory '{src_path}' not found!")
-        return
-
-    # Ensure the backup directory exists, or create it
-    if os.path.exists(backup_path):
-        shutil.rmtree(backup_path)  # Remove old backup if it exists
-    os.makedirs(backup_path)
-
-    # Copy all files
-    for item in os.listdir(src_path):
-        src_item = os.path.join(src_path, item)
-        dest_item = os.path.join(backup_path, item)
-        
-        if os.path.isdir(src_item):
-            shutil.copytree(src_item, dest_item)
-        else:
-            shutil.copy2(src_item, dest_item)
-
-    log_message(project_id, "R EXECUTION", f"✅ Backup completed at {backup_path}")
-
 def restore_project_src(project_id):
-    """Restores the project source directory from backup."""
-    project_path = os.path.join(REPOS_DIR, f"{project_id}_repo")
-    src_path = os.path.join(project_path, f"{project_id}_src")
-    backup_path = os.path.join(project_path, f"{project_id}_src_backup")
+    """Restores the project source directory from zip file."""
+    src_path = get_src_path(project_id)
 
-    log_message(project_id, "R EXECUTION", f"♻️ Restoring {src_path} from {backup_path}...")
+    log_message(project_id, "R EXECUTION", f"♻️ Restoring {src_path} from zip file...")
 
-    # Ensure the backup exists
-    if not os.path.exists(backup_path):
-        log_message(project_id, "R EXECUTION", f"⚠️ No backup found! Skipping restore step.")
-        return
+    print('test')
 
-    # Remove current src directory and replace with backup
     if os.path.exists(src_path):
         shutil.rmtree(src_path)
-    
-    shutil.copytree(backup_path, src_path)
+
+    print('test2')
+
+    unzip_project(project_id)
+
+    print('test3')
+
     log_message(project_id, "R EXECUTION", f"✅ Restore completed.")
+
 
 def execute_r_file(container_name, r_file, log_file, project_id):
     """Executes an R file inside the container, backs up, and restores project source."""
-    
-    # Backup the project source directory before execution
-    backup_project_src(project_id)
 
     # Get the correct working directory from the file path
     r_script_dir = os.path.dirname(r_file)
@@ -132,9 +100,6 @@ def execute_r_file(container_name, r_file, log_file, project_id):
 
 def render_rmd_file(container_name, rmd_file, log_file, project_id):
     """Renders an Rmd file inside the container, manages backup and restores output files."""
-    
-    # Backup the project source directory before execution
-    backup_project_src(project_id)
 
     log_message(project_id, "R EXECUTION", f"Rendering {rmd_file} in container {container_name}...")
     
@@ -199,7 +164,6 @@ def run_all_files_in_container(project_id):
     matched_files = [
         file for file in available_files
         if os.path.basename(file).lower().endswith((".r", ".rmd")) and os.path.basename(file).lower() in [f.lower() for f in project_files]
-        and "src_backup" not in file
     ]
 
     if not matched_files:

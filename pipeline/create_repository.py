@@ -90,7 +90,8 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
 
     readme_path = os.path.join(project_dir, "README.md")
     with open(readme_path, "w") as readme:
-        readme.write(f"# Binderised version of the OSF project - {project_id}\n\n")
+        # readme.write(f"# Binderised version of the OSF project - {project_id}\n\n")
+        readme.write(f"# Executable Environment for OSF Project [{project_id}](https://osf.io/{project_id}/) via MyBinder\n\n")
         readme.write("---\n")
         readme.write("## OSF Project Metadata:\n\n")
         readme.write(f"**Project Title:** {project_title}\n\n")
@@ -122,7 +123,6 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
 
         readme.write(f"**Access Downloaded Data:**\n")
         readme.write(f"The downloaded data from the OSF project is located in the `{project_id}_src` folder.\n\n")
-        readme.write("---\n")
 
     if add_github_repo:
         if not create_github_repo(repo_name):

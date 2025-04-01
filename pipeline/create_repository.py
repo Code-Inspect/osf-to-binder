@@ -91,7 +91,7 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
     readme_path = os.path.join(project_dir, "README.md")
     with open(readme_path, "w") as readme:
         # readme.write(f"# Binderised version of the OSF project - {project_id}\n\n")
-        readme.write(f"# Executable Environment for OSF Project [{project_id}](https://osf.io/{project_id}/) via MyBinder\n\n")
+        readme.write(f"# Executable Environment for OSF Project [{project_id}](https://osf.io/{project_id}/)\n\n")
         readme.write("---\n")
         readme.write("## OSF Project Metadata:\n\n")
         readme.write(f"**Project Title:** {project_title}\n\n")
@@ -105,7 +105,7 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
             f"**Important Note:** The contents of the `{project_id}_src` folder were cloned from the OSF project on **12-03-2025**. Any changes made to the original OSF project after this date will not be reflected in this repository.\n\n"
         )
         readme.write(
-            "The `DESCRIPTION` file was automatically added to make this project Binder-ready. For more information on how R-based OSF projects are containerized, please refer to the `osf-to-binder` GitHub repository: [https://github.com/Code-Inspect/osf-to-binder.git](https://github.com/Code-Inspect/osf-to-binder.git)\n\n"
+            "The `DESCRIPTION` file was automatically added to make this project Binder-ready. For more information on how R-based OSF projects are containerized, please refer to the `osf-to-binder` GitHub repository: [https://github.com/Code-Inspect/osf-to-binder](https://github.com/Code-Inspect/osf-to-binder)\n\n"
         )
         readme.write("## How to Launch:\n\n")
         readme.write("**Launch in your Browser:**\n\n")

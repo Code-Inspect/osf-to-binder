@@ -4,25 +4,6 @@ from git import Repo
 from osfclient.api import OSF
 from utils import log_message
 from utils import LOGS_DIR
-
-
-# Define log path inside the logs directory
-MISSING_LOG_PATH = os.path.join(LOGS_DIR, "missing_packages.log")
-
-def get_latest_r_package_version(package_name):
-    """Fetch latest R package version from CRAN and log if not found."""
-    try:
-        cran_resp = requests.get(f"https://crandb.r-pkg.org/{package_name}")
-        if cran_resp.status_code == 200:
-            return cran_resp.json().get("Version")
-        else:
-            with open(MISSING_LOG_PATH, "a") as log:
-                log.write(f"{package_name} - not found on CRAN\n")
-    except Exception as e:
-        with open(MISSING_LOG_PATH, "a") as log:
-            log.write(f"{package_name} - CRAN check failed: {str(e)}\n")
-    
-    return None
     
 def create_github_repo(repo_name):
     """Creates a GitHub repository."""
@@ -69,16 +50,6 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
             elif is_r_libraries_section and line:
                 dependencies.append(line)
 
-    # Fetch versions
-    dependencies_with_versions = []
-    for pkg in dependencies:
-        version = get_latest_r_package_version(pkg)
-        if version:
-            dependencies_with_versions.append(f"{pkg} (== {version})")
-        else:
-            log_message(project_id, "REPO2DOCKER SETUP", f"⚠️ Could not fetch version for package: {pkg}. Adding without version.")
-            dependencies_with_versions.append(pkg)
- 
     description_path = os.path.join(project_dir, "DESCRIPTION")
     with open(description_path, "w") as desc:
         desc.write("Package: repo2dockerProject\n")
@@ -89,9 +60,9 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
         desc.write("Description: Automatically generated DESCRIPTION file for Repo2Docker.\n")
         desc.write("License: MIT\n")
         desc.write("Imports: ")
-        if dependencies_with_versions:
-            desc.write(",\n    ".join(dependencies_with_versions))
-            desc.write("\n")
+        for dep in dependencies:
+            desc.write(f"{dep}, ")
+        desc.write("\n")
  
     os.remove(dependencies_file)
 

@@ -29,7 +29,7 @@ def build_docker_image(project_id, project_path):
         "--image-name", image_name,
         project_path
     ]
-    
+
     log_message(project_id, "CONTAINER BUILD", "⚙️ Building Docker container...")
     
     try:
@@ -41,6 +41,70 @@ def build_docker_image(project_id, project_path):
         log_message(project_id, "CONTAINER BUILD", f"❌ Failed to build container: {e.returncode}")
         log_message(project_id, "CONTAINER BUILD", f"{' '.join(e.cmd)}")
         return None
+    
+def parse_installed_versions(log_file_path):
+    packages = {}
+    with open(log_file_path, "r") as f:
+        for line in f:
+            if "==" in line:
+                pkg, version = line.strip().split("==")
+                packages[pkg.strip()] = version.strip()
+    return packages
+
+def update_description_with_versions(project_id, version_dict):
+    """Cleanly replaces the Imports section in DESCRIPTION with versioned packages."""
+    description_path = os.path.join(get_project_path(project_id), "DESCRIPTION")
+    if not os.path.exists(description_path):
+        log_message(project_id, "VERSION UPDATE", f"⚠️ DESCRIPTION file not found at {description_path}")
+        return
+
+    with open(description_path, "r") as f:
+        lines = f.readlines()
+
+    updated_lines = []
+    in_imports = False
+    imports_buffer = []
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Start of Imports (one-line or multi-line)
+        if stripped.startswith("Imports:"):
+            in_imports = True
+
+            # Handle one-line imports
+            inline_imports = stripped.replace("Imports:", "").strip()
+            if inline_imports:
+                imports_buffer = [pkg.strip().rstrip(",") for pkg in inline_imports.split(",") if pkg.strip()]
+            continue
+
+        # Inside a multi-line Imports block
+        elif in_imports:
+            if stripped == "" or not stripped[0].isalpha():
+                in_imports = False
+                continue
+            imports_buffer.append(stripped.rstrip(","))
+            continue
+
+        updated_lines.append(line)
+
+    # Create the cleaned Imports section with versions
+    if imports_buffer:
+        updated_lines.append("Imports:\n")
+        for pkg in imports_buffer:
+            version = version_dict.get(pkg)
+            if version:
+                updated_lines.append(f"    {pkg} (== {version}),\n")
+            else:
+                updated_lines.append(f"    {pkg},\n")
+        # Remove trailing comma
+        if updated_lines[-1].strip().endswith(","):
+            updated_lines[-1] = updated_lines[-1].rstrip(",\n") + "\n"
+
+    with open(description_path, "w") as f:
+        f.writelines(updated_lines)
+
+    log_message(project_id, "VERSION UPDATE", f"✅ Cleaned and updated Imports section in: {description_path}")
 
 def build_image(project_id):
     """Builds the docker image using repo2docker."""
@@ -62,38 +126,79 @@ def build_image(project_id):
         return False
     
 def run_container(project_id):
-    """Runs the container for the project."""
+    """Runs the container for the project, logs R package versions, and updates DESCRIPTION."""
     log_message(project_id, "CONTAINER RUN", f"=== Running container for project: {project_id} ===")
-    
+
     project_path = check_project_exists(project_id)
     if not project_path:
         return False
 
     image_name, container_name = get_image_and_container_name(project_id)
 
-    # Removes an existing container if it exists.
+    # Remove any existing container
     try:
         subprocess.run(["docker", "rm", "-f", container_name], check=True)
         log_message(project_id, "CONTAINER RUN", f"🗑️ Removed existing container '{container_name}'.")
     except subprocess.CalledProcessError:
         log_message(project_id, "CONTAINER RUN", f"ℹ️ No existing container '{container_name}' found to remove.")
-    
-    # Run the container
+
+    # Run container in detached mode
     run_command = [
         "docker", "run", "-d",
         "--name", container_name,
         "-v", f"{os.path.abspath(project_path)}:/data",
         image_name
     ]
-    
+
     try:
         subprocess.run(run_command, check=True)
         log_message(project_id, "CONTAINER RUN", f"✅ Container '{container_name}' started successfully.")
-        return True
     except subprocess.CalledProcessError as e:
         log_message(project_id, "CONTAINER RUN", f"❌ Failed to start container: {e.returncode}")
         log_message(project_id, "CONTAINER RUN", f"{' '.join(e.cmd)}")
         return False
+
+    # Paths for logging
+    host_log_path = os.path.join(LOGS_DIR, f"{project_id}_package_versions.log")
+    container_log_path = "/tmp/pkg_versions.log"
+    container_r_script_path = "/tmp/log_versions.R"
+    local_r_script_path = os.path.join(LOGS_DIR, f"{project_id}_log_versions.R")
+
+    # Create R script to log installed packages
+    r_script = f"""
+sink('{container_log_path}')
+ip <- installed.packages()
+cat("Installed R Package Versions:\\n\\n")
+for (pkg in rownames(ip)) {{
+  cat(sprintf('%s == %s\\n', pkg, ip[pkg, 'Version']))
+}}
+sink()
+"""
+    with open(local_r_script_path, "w") as f:
+        f.write(r_script)
+
+    try:
+        # Copy R script into the container
+        subprocess.run(["docker", "cp", local_r_script_path, f"{container_name}:{container_r_script_path}"], check=True)
+
+        # Run the R script inside the container
+        subprocess.run(["docker", "exec", container_name, "Rscript", container_r_script_path], check=True)
+
+        # Copy the version log file back to host
+        subprocess.run(["docker", "cp", f"{container_name}:{container_log_path}", host_log_path], check=True)
+
+        log_message(project_id, "CONTAINER RUN", f"📦 Retrieved package log from container to: {host_log_path}")
+        os.remove(local_r_script_path)
+    except subprocess.CalledProcessError as e:
+        log_message(project_id, "CONTAINER RUN", f"⚠️ Failed to retrieve package versions: {e}")
+        return False
+
+    # Update DESCRIPTION file using parsed version log
+    if os.path.exists(host_log_path):
+        version_dict = parse_installed_versions(host_log_path)
+        update_description_with_versions(project_id, version_dict)
+
+    return True
 
 def build_and_run(project_id, no_run=False):
     """Processes a project."""

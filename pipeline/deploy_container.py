@@ -41,6 +41,15 @@ def build_docker_image(project_id, project_path):
         log_message(project_id, "CONTAINER BUILD", f"❌ Failed to build container: {e.returncode}")
         log_message(project_id, "CONTAINER BUILD", f"{' '.join(e.cmd)}")
         return None
+    
+def check_docker_daemon(project_id):
+    """Checks if the Docker daemon is running before proceeding."""
+    try:
+        subprocess.run(["docker", "info"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        return True
+    except subprocess.CalledProcessError:
+        log_message(project_id, "DOCKER CHECK", "❌ Docker daemon is not running. Please start Docker.")
+        return False
 
 def build_image(project_id):
     """Builds the docker image using repo2docker."""
@@ -116,6 +125,10 @@ def run_container(project_id):
 def build_and_run(project_id, no_run=False):
     """Processes a project."""
     log_message(project_id, "CONTAINER BUILD", f"=== 🚀 Processing Project: '{project_id}' ===")
+
+    if not check_docker_daemon(project_id):
+        return False  # skip further processing
+    
     try:
         if not build_image(project_id):
             log_message(project_id, "CONTAINER BUILD", f"⚠️ Failed to build repository.")

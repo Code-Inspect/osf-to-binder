@@ -88,7 +88,7 @@ def run_container(project_id):
     container_command = ["Rscript", "-e", container_r_command]
 
     run_command = [
-        "docker", "run", "--rm",
+        "docker", "run", "-d",
         "--name", container_name,
         "--user", "root",  # ✅ Ensures write access to /data
         "-v", f"{os.path.abspath(project_path)}:/data",

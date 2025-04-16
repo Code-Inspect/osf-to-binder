@@ -126,13 +126,9 @@ def render_rmd_file(container_name, rmd_file, log_file, project_id):
     log_execution_to_csv(project_id, rmd_file, execution_status)
     
 def run_all_files_in_container(project_id):
-    """Automates execution of only the R and Rmd files listed in the CSV for the given project."""
+    """Executes R and Rmd files in a container. Uses project_id_r_code_file.csv if available, falls back to all R/Rmd files if not."""
     container_name = f"repo2docker-{project_id}"
     log_file = os.path.join(LOGS_DIR, f"{project_id}_execution.log")
-
-    # Load CSV file
-    cleaned_csv_path = os.path.join(METADATA_DIR, "project_id_r_code_file.csv")
-    df_project_files = pd.read_csv(cleaned_csv_path)
 
     # Ensure the container is running
     try:
@@ -145,39 +141,48 @@ def run_all_files_in_container(project_id):
         log_message(project_id, "R EXECUTION", f"Container {container_name} is not running.")
         return
 
-    # List available R and Rmd files in the source directory
-    src_dir = f"/data/{project_id}_src"  # Path inside the container
+    # Path inside container
+    src_dir = f"/data/{project_id}_src"
+
+    # List available files
     available_files = list_files(container_name, directory=src_dir, extensions=[".R", ".Rmd", ".r", ".rmd"])
 
     if not available_files:
         log_message(project_id, "R EXECUTION", f"No R or Rmd files found in {src_dir} for container {container_name}.")
         return
 
-    # Filter the files from the CSV for the specific project
-    project_files = df_project_files[df_project_files["Project ID"] == project_id]["R Code File"].tolist()
+    # Try to load CSV (optional)
+    csv_path = os.path.join(METADATA_DIR, "project_id_r_code_file.csv")
+    matched_files = []
 
-    if not project_files:
-        log_message(project_id, "R EXECUTION", f"⚠️ No matching R files found for project {project_id} in the CSV. Skipping execution.")
-        return
-
-    # Normalize extensions to ensure both `.R` and `.r` are treated the same
-    matched_files = [
-        file for file in available_files
-        if os.path.basename(file).lower().endswith((".r", ".rmd")) and os.path.basename(file).lower() in [f.lower() for f in project_files]
-    ]
+    if os.path.exists(csv_path):
+        try:
+            df = pd.read_csv(csv_path)
+            project_files = df[df["Project ID"] == project_id]["R Code File"].tolist()
+            matched_files = [
+                file for file in available_files
+                if os.path.basename(file).lower() in [f.lower() for f in project_files]
+            ]
+            if matched_files:
+                log_message(project_id, "R EXECUTION", f"✅ Found {len(matched_files)} matched R files in CSV. Executing only matched files.")
+            else:
+                log_message(project_id, "R EXECUTION", f"No matching R files found in CSV. Falling back to executing all available R/Rmd files.")
+        except Exception as e:
+            log_message(project_id, "R EXECUTION", f"Failed to parse CSV: {e}. Executing all available files.")
+            matched_files = []  # fallback
+    else:
+        log_message(project_id, "R EXECUTION", f"ℹ️ CSV file not found. Executing all available R/Rmd files.")
 
     if not matched_files:
-        log_message(project_id, "R EXECUTION", f"⚠️ None of the expected files from the CSV were found inside the container for project {project_id}. Skipping execution.")
-        return
+        matched_files = available_files
 
-    log_message(project_id, "R EXECUTION", f"Found {len(matched_files)} R and Rmd files in {src_dir}. Executing them now...")
+    log_message(project_id, "R EXECUTION", f"🔍 Executing {len(matched_files)} file(s) inside container.")
 
     execution_start = time.time()
 
     for file in matched_files:
         file_start = time.time()
-        # remove the /data/ prefix
-        file = file[len("/data/"):]
+        file = file[len("/data/"):]  # remove prefix
         if file.endswith((".R", ".r")):
             execute_r_file(container_name, file, log_file, project_id)
         elif file.endswith((".Rmd", ".rmd")):
@@ -186,10 +191,8 @@ def run_all_files_in_container(project_id):
 
     execution_end = time.time()
 
-    # Log the total execution time
     log_message(project_id, "R EXECUTION", f"⏳ Total execution time for project {project_id}: {execution_end - execution_start:.2f} seconds", execution_log=True)
-
-    log_message(project_id, "R EXECUTION", f"Execution completed for project {project_id}. Logs at {log_file}. Results stored in {RESULTS_FILE}")
+    log_message(project_id, "R EXECUTION", f"✅ Execution completed for project {project_id}. Logs at {log_file}. Results stored in {RESULTS_FILE}")
 
 def execute_r_scripts(project_id):
     """Executes R scripts in the container."""

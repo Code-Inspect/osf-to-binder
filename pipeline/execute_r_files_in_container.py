@@ -12,8 +12,10 @@ RESULTS_FILE = os.path.join(RESULTS_DIR, "execution_results.csv")  # CSV file at
 TIMEOUT = None  # the time to wait for the container to run the script. `int` for timout in seconds. None means no timeout.
 
 
-def log_execution_to_csv(project_id, file_name, status):
+def log_execution_to_csv(project_id, file_path, status):
     """Logs execution results to a global CSV file."""
+    file_name = os.path.basename(file_path)  # Extracts only the file name
+
     with open(RESULTS_FILE, "a", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow([project_id, file_name, status])

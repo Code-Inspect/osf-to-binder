@@ -88,13 +88,7 @@ def run_container(project_id):
     except subprocess.CalledProcessError:
         log_message(project_id, "CONTAINER RUN", f"ℹ️ No existing container '{container_name}' found to remove.")
 
-    container_r_command = (
-        "rver <- paste0(R.version$major, '.', R.version$minor); "
-        "today <- Sys.Date(); "
-        "cat(paste0('r-', rver, '-', today), file='/data/runtime.txt')"
-    )
-
-    container_command = ["Rscript", "-e", container_r_command]
+    container_command = ["tail", "-f", "/dev/null"]
 
     run_command = [
         "docker", "run", "-d",
@@ -111,7 +105,24 @@ def run_container(project_id):
         log_message(project_id, "CONTAINER RUN", f"❌ Failed to start container: {e.returncode}")
         log_message(project_id, "CONTAINER RUN", f"{' '.join(e.cmd)}")
         return False
+    
+    # 2. Run the R command inside the already running container to generate runtime.txt
+    container_r_command = (
+        "rver <- paste0(R.version$major, '.', R.version$minor); "
+        "today <- Sys.Date(); "
+        "cat(paste0('r-', rver, '-', today), file='/data/runtime.txt')"
+    )
 
+    try:
+        subprocess.run([
+            "docker", "exec", container_name,
+            "Rscript", "-e", container_r_command
+        ], check=True)
+        log_message(project_id, "CONTAINER RUN", "✅ runtime.txt written successfully inside the container.")
+    except subprocess.CalledProcessError as e:
+        log_message(project_id, "CONTAINER RUN", f"❌ Failed to write runtime.txt: {e}")
+
+    # 3. Read and log runtime.txt content
     runtime_path = os.path.join(project_path, "runtime.txt")
     if os.path.exists(runtime_path):
         with open(runtime_path) as f:

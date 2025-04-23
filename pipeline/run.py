@@ -8,6 +8,7 @@ from create_repository import create_repo2docker_files
 from execute_r_files_in_container import execute_r_scripts
 from flowr_dependency_query import extract_dependencies
 from osf_zip_file_download import unzip_project
+from error_analysis import analyze_project_log
 
 def run_flowr_dependency_query(project_path):
     """Extract dependencies using flowr_dependency_query.py if R or Rmd scripts exist."""
@@ -80,6 +81,12 @@ def process_project(project_id):
         # Stage 5: Execute R Scripts
         if not execute_r_scripts(project_id):
             return False
+        
+        if not execute_r_scripts(project_id):
+            return False
+
+        # 🔍 Run error analysis immediately for the project
+        analyze_project_log(project_id)
 
         total_time = time.time() - start_time
         log_message(project_id, "TOTAL TIME", f"⏳ Total processing time: {total_time:.2f} seconds.")

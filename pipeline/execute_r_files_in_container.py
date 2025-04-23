@@ -16,12 +16,28 @@ def log_execution_to_csv(project_id, file_path, status):
     """Logs execution results to a global CSV file."""
     file_name = os.path.basename(file_path)  # Extracts only the file name
 
+    # Ensure header exists and prevent duplicates
+    if not os.path.exists(RESULTS_FILE):
+        with open(RESULTS_FILE, "w", newline="") as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(["Project ID", "R/Rmd Script", "Execution Status"])
+    else:
+        try:
+            df = pd.read_csv(RESULTS_FILE)
+            if ((df["Project ID"] == project_id) & (df["R/Rmd Script"] == file_name)).any():
+                return  # Already logged
+        except pd.errors.EmptyDataError:
+            # File exists but is empty, so write headers
+            with open(RESULTS_FILE, "w", newline="") as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(["Project ID", "R/Rmd Script", "Execution Status"])
+
+    # Append the result
     with open(RESULTS_FILE, "a", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow([project_id, file_name, status])
 
     log_message(project_id, "R EXECUTION", f"✅ Logged execution result for {file_name} in {RESULTS_FILE}")
-
 
 def list_files(container_name, directory, extensions):
     """Lists files with specific extensions in a given directory of the container."""

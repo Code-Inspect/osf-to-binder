@@ -10,6 +10,8 @@ from flowr_dependency_query import extract_dependencies
 from osf_zip_file_download import unzip_project
 from error_analysis import analyze_project_log
 
+DOCKERHUB_USERNAME = "meet261"
+
 def run_flowr_dependency_query(project_path):
     """Extract dependencies using flowr_dependency_query.py if R or Rmd scripts exist."""
     dependency_file = os.path.join(project_path, "dependencies.txt")
@@ -29,7 +31,7 @@ def run_flowr_dependency_query(project_path):
         return False
 
     log_message(project_id, "DEPENDENCY EXTRACTION", f"📦 Running flowr_dependency_query.py for {src_path}...")
-    
+
     try:
         extract_dependencies(input_dir=src_path, output_file=dependency_file)
         log_message(project_id, "DEPENDENCY EXTRACTION", f"✅ Dependencies extracted to {dependency_file}")
@@ -40,7 +42,7 @@ def run_flowr_dependency_query(project_path):
 
 
 def process_project(project_id):
-    """Processes a project with all necessary steps."""
+    """Processes a project with all necessary steps, including Docker Hub push."""
     start_time = time.time()
     log_message(project_id, "PROJECT INIT", f"🚀 Starting processing for project '{project_id}'")
 
@@ -74,14 +76,11 @@ def process_project(project_id):
         container_setup_end = time.time()
         log_message(project_id, "REPO2DOCKER SETUP", f"✅ Repo2Docker files created successfully in {container_setup_end - container_setup_start:.2f} seconds.")
 
-        # Stage 4: Build and Run Container
-        if not build_and_run(project_id):
+        # Stage 4: Build, Run and Push Container
+        if not build_and_run(project_id, push=True, dockerhub_username=DOCKERHUB_USERNAME):
             return False
 
         # Stage 5: Execute R Scripts
-        if not execute_r_scripts(project_id):
-            return False
-        
         if not execute_r_scripts(project_id):
             return False
 
@@ -114,9 +113,8 @@ def main():
         if process_project(project_id):
             success_count += 1
 
-    # Log summary to each project's log file
     for project_id in project_ids:
         log_message(project_id, "SUMMARY", f"Processed {len(project_ids)} projects. {success_count} successful, {len(project_ids) - success_count} failed.")
 
 if __name__ == "__main__":
-    main() 
+    main()

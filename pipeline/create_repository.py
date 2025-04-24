@@ -4,18 +4,22 @@ from git import Repo
 from osfclient.api import OSF
 from utils import log_message
 from utils import LOGS_DIR
+import time
     
-def create_github_repo(repo_name):
-    """Creates a GitHub repository."""
+DOCKERHUB_USERNAME = "meet261"
+
+def create_github_repo(repo_name, org="code-inspect-binder"):
+    """Creates a GitHub repository under the specified organization."""
     token = os.getenv("GITHUB_ACCESS_TOKEN")
     if not token:
         log_message(repo_name, "REPO2DOCKER SETUP", "❌ GitHub access token not found in environment variables.")
         return False
 
     headers = {"Authorization": f"token {token}"}
-    payload = {"name": repo_name, "private": False}
-    response = requests.post("https://api.github.com/user/repos", json=payload, headers=headers)
-    
+    payload = {"name": repo_name, "private": False, "auto_init": True}
+    url = f"https://api.github.com/orgs/{org}/repos"
+    response = requests.post(url, json=payload, headers=headers)
+
     if response.status_code == 201:
         log_message(repo_name, "REPO2DOCKER SETUP", f"✅ GitHub repository '{repo_name}' created successfully.")
         return True
@@ -25,8 +29,25 @@ def create_github_repo(repo_name):
     else:
         log_message(repo_name, "REPO2DOCKER SETUP", f"❌ Failed to create GitHub repository: {response.json()}")
         return False
+    
+def fetch_osf_metadata(project_id, retries=5, delay=5):
+    """Fetches OSF project title and description with retry logic."""
+    osf = OSF()
+    for attempt in range(retries):
+        try:
+            project = osf.project(project_id)
+            title = project.title
+            description = project.description or "No description provided."
+            return title, description
+        except Exception as e:
+            if attempt < retries - 1:
+                time.sleep(delay * (2 ** attempt))  # exponential backoff
+            else:
+                log_message(project_id, "REPO2DOCKER SETUP", f"⚠️ OSF API failed after {retries} attempts: {e}")
+                return f"osf_{project_id}", "This repository was automatically generated for use with repo2docker."
 
-def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
+
+def create_repo2docker_files(project_dir, project_id, add_github_repo=True):
     """Creates necessary repo2docker files in the project directory."""
     repo_name = f"osf_{project_id}"
     dependencies_file = os.path.join(project_dir, "dependencies.txt")
@@ -54,11 +75,11 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
     with open(description_path, "w") as desc:
         desc.write("Package: repo2dockerProject\n")
         desc.write("Type: Package\n")
-        desc.write("Title: Repo2Docker Project\n")
+        desc.write("Title: Executable OSF Environment\n")
         desc.write("Version: 1.0\n")
         desc.write("Authors@R: c(person(\"Maintainer\", \"Example\", email = \"maintainer@example.com\", role = c(\"aut\", \"cre\")))\n")
         desc.write("Description: Automatically generated DESCRIPTION file for Repo2Docker.\n")
-        desc.write("License: MIT\n")
+        desc.write(f"License: See license and authorship information at https://osf.io/{project_id}/\n")
         desc.write("Imports: ")
         for dep in dependencies:
             desc.write(f"{dep}, ")
@@ -66,42 +87,19 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
  
     os.remove(dependencies_file)
 
-    # postbuild_path = os.path.join(project_dir, "postBuild")
-    # with open(postbuild_path, "w") as postbuild:
-    #     postbuild.write("#!/bin/bash\n\n")
-    #     postbuild.write("# Update system and install required libraries\n")
-    #     postbuild.write("# Install R-remotes version 2.5.0\n")
-    #     postbuild.write("R -e \"install.packages('remotes', repos = 'http://cran.us.r-project.org', type = 'source')\"\n")
-    #     postbuild.write("R -e \"remotes::install_version('remotes', version = '2.5.0', repos = 'http://cran.us.r-project.org')\"\n")
-    #     postbuild.write("\n")
-    #     postbuild.write("# Install FlowR\n")
-    #     postbuild.write("R -e \"remotes::install_github('flowr-analysis/rstudio-addin-flowr')\"\n")
-    #
-    # os.chmod(postbuild_path, 0o755)
-
-    osf = OSF()
-    try:
-        project = osf.project(project_id)
-        project_title = project.title
-        project_description = project.description or "No description provided."
-    except Exception as e:
-        log_message(project_id, "REPO2DOCKER SETUP", f"⚠️ Error fetching project details from OSF: {e}. Using default README content.")
-        project_title = repo_name
-        project_description = "This repository was automatically generated for use with repo2docker."
+    # 🧠 Use robust metadata retrieval with fallback
+    project_title, project_description = fetch_osf_metadata(project_id)
 
     readme_path = os.path.join(project_dir, "README.md")
     with open(readme_path, "w") as readme:
         # readme.write(f"# Binderised version of the OSF project - {project_id}\n\n")
         readme.write(f"# Executable Environment for OSF Project [{project_id}](https://osf.io/{project_id}/)\n\n")
-        readme.write("---\n")
-        readme.write("## OSF Project Metadata:\n\n")
+        readme.write("This repository was automatically generated as part of a project to test the reproducibility of open science projects hosted on the Open Science Framework (OSF).\n\n"
+        )
         readme.write(f"**Project Title:** {project_title}\n\n")
         readme.write(f"**Project Description:**\n> {project_description}\n\n")
         readme.write(f"**Original OSF Page:** [https://osf.io/{project_id}/](https://osf.io/{project_id}/)\n\n")
         readme.write("---\n\n")
-        readme.write(
-            "This repository was automatically generated as part of a project to test the reproducibility of open science projects hosted on the Open Science Framework (OSF).\n\n"
-        )
         readme.write(
             f"**Important Note:** The contents of the `{project_id}_src` folder were cloned from the OSF project on **12-03-2025**. Any changes made to the original OSF project after this date will not be reflected in this repository.\n\n"
         )
@@ -111,25 +109,39 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
         readme.write("## How to Launch:\n\n")
         readme.write("**Launch in your Browser:**\n\n")
         readme.write(
-            f"🚀 **MyBinder:** [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Meet261/{repo_name}/HEAD?urlpath=rstudio)\n\n"
+            f"🚀 **MyBinder:** [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/code-inspect-binder/{repo_name}/HEAD?urlpath=rstudio)\n\n"
         )
         readme.write(
             "   * This will launch the project in an interactive RStudio environment in your web browser.\n"
             "   * Please note that Binder may take a few minutes to build the environment.\n\n"
         )
         readme.write(
-            f"🚀 **NFDI JupyterHub:** [![NFDI](https://nfdi-jupyter.de/images/nfdi_badge.svg)](https://hub.nfdi-jupyter.de/r2d/gh/Meet261/{repo_name}/HEAD?urlpath=rstudio)\n\n"
+            f"🚀 **NFDI JupyterHub:** [![NFDI](https://nfdi-jupyter.de/images/nfdi_badge.svg)](https://hub.nfdi-jupyter.de/r2d/gh/code-inspect-binder/{repo_name}/HEAD?urlpath=rstudio)\n\n"
         )
         readme.write("   * This will launch the project in an interactive RStudio environment on the NFDI JupyterHub platform.\n\n")
 
         readme.write(f"**Access Downloaded Data:**\n")
         readme.write(f"The downloaded data from the OSF project is located in the `{project_id}_src` folder.\n\n")
+        readme.write("## Run via Docker for Long-Term Reproducibility\n\n")
+        readme.write("In addition to launching this project using Binder or NFDI JupyterHub, you can reproduce the environment locally using Docker. This is especially useful for long-term access, offline use, or high-performance computing environments.\n\n")
+        readme.write("**Pull the Docker Image**\n\n")
+        readme.write("```bash\n")
+        readme.write(f"docker pull {DOCKERHUB_USERNAME}/repo2docker-{project_id}:latest\n")
+        readme.write("```\n\n")
+        readme.write("**Launch RStudio Server**\n\n")
+        readme.write("```bash\n")
+        readme.write(f"docker run -e PASSWORD=yourpassword -p 8787:8787 {DOCKERHUB_USERNAME}/repo2docker-{project_id}\n")
+        readme.write("```\n")
+        readme.write("Replace `yourpassword` with a secure password of your choice. You will use this to log in to the RStudio web interface.\n\n")
+        readme.write("**Once the container is running, visit `http://localhost:8787` in your browser.**\n")
+        readme.write("Use username: `rstudio` and the password you set with `-e PASSWORD=...`.\n")
+
 
     if add_github_repo:
-        if not create_github_repo(repo_name):
+        if not create_github_repo(repo_name, org="code-inspect-binder"):
             return False
 
-        github_repo_url = f"https://github.com/Meet261/{repo_name}.git"
+        github_repo_url = f"https://github.com/code-inspect-binder/{repo_name}.git"
         log_message(project_id, "REPO2DOCKER SETUP", f"Initializing Git repository for {project_dir}...")
         
         try:

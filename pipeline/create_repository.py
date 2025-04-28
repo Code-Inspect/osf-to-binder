@@ -59,7 +59,7 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=True):
     log_message(project_id, "REPO2DOCKER SETUP", f"✅ dependencies.txt found at {dependencies_file}. Proceeding with repo2docker setup.")
      
     dependencies = []
-    with open(dependencies_file, "r") as f:
+    with open(dependencies_file, "r",encoding="utf-8") as f:
         is_r_libraries_section = False
         for line in f:
             line = line.strip()
@@ -72,7 +72,7 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=True):
                 dependencies.append(line)
 
     description_path = os.path.join(project_dir, "DESCRIPTION")
-    with open(description_path, "w") as desc:
+    with open(description_path, "w", encoding="utf-8") as desc:
         desc.write("Package: repo2dockerProject\n")
         desc.write("Type: Package\n")
         desc.write("Title: Executable OSF Environment\n")
@@ -91,7 +91,7 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=True):
     project_title, project_description = fetch_osf_metadata(project_id)
 
     readme_path = os.path.join(project_dir, "README.md")
-    with open(readme_path, "w") as readme:
+    with open(readme_path, "w",encoding="utf-8" ) as readme:
         # readme.write(f"# Binderised version of the OSF project - {project_id}\n\n")
         readme.write(f"# Executable Environment for OSF Project [{project_id}](https://osf.io/{project_id}/)\n\n")
         readme.write("This repository was automatically generated as part of a project to test the reproducibility of open science projects hosted on the Open Science Framework (OSF).\n\n"

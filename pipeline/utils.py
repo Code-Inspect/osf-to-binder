@@ -24,7 +24,7 @@ def log_message(project_id, stage, message, execution_log=False):
     
     # Write to file (both regular and execution logs)
     log_file = os.path.join(LOGS_DIR, f"{project_id}{'_execution' if execution_log else ''}.log")
-    with open(log_file, "a") as f:
+    with open(log_file, "a", encoding="utf-8") as f:
         f.write(log_entry + "\n")
 
 def get_project_path(project_id):

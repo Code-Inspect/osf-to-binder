@@ -83,7 +83,7 @@ def push_image_to_dockerhub(project_id, push=True):
         return False
 
 
-def build_image(project_id, push=True, dockerhub_username=None):
+def build_image(project_id, push=False, dockerhub_username=None):
     """Builds the docker image using repo2docker."""
     log_message(project_id, "CONTAINER BUILD", f"=== Building repository for project: {project_id} ===")
 

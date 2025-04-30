@@ -47,7 +47,7 @@ def fetch_osf_metadata(project_id, retries=5, delay=5):
                 return f"osf_{project_id}", "This repository was automatically generated for use with repo2docker."
 
 
-def create_repo2docker_files(project_dir, project_id, add_github_repo=True):
+def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
     """Creates necessary repo2docker files in the project directory."""
     repo_name = f"osf_{project_id}"
     dependencies_file = os.path.join(project_dir, "dependencies.txt")

@@ -77,7 +77,7 @@ def process_project(project_id):
         log_message(project_id, "REPO2DOCKER SETUP", f"✅ Repo2Docker files created successfully in {container_setup_end - container_setup_start:.2f} seconds.")
 
         # Stage 4: Build, Run and Push Container
-        if not build_and_run(project_id, push=True, dockerhub_username=DOCKERHUB_USERNAME):
+        if not build_and_run(project_id, push=False, dockerhub_username=DOCKERHUB_USERNAME):
             return False
 
         # Stage 5: Execute R Scripts

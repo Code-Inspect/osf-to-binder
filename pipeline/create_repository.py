@@ -5,6 +5,7 @@ from osfclient.api import OSF
 from utils import log_message
 from utils import LOGS_DIR
 import time
+import shutil
     
 DOCKERHUB_USERNAME = "meet261"
 
@@ -124,18 +125,26 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
         readme.write(f"The downloaded data from the OSF project is located in the `{project_id}_src` folder.\n\n")
         readme.write("## Run via Docker for Long-Term Reproducibility\n\n")
         readme.write("In addition to launching this project using Binder or NFDI JupyterHub, you can reproduce the environment locally using Docker. This is especially useful for long-term access, offline use, or high-performance computing environments.\n\n")
-        readme.write("**Pull the Docker Image**\n\n")
+        readme.write("### Pull the Docker Image\n\n")
         readme.write("```bash\n")
-        readme.write(f"docker pull {DOCKERHUB_USERNAME}/repo2docker-{project_id}:latest\n")
+        readme.write(f"docker pull {DOCKERHUB_USERNAME}/repo2docker-{project_id}-f:latest\n")
         readme.write("```\n\n")
-        readme.write("**Launch RStudio Server**\n\n")
-        readme.write("```bash\n")
-        readme.write(f"docker run -e PASSWORD=yourpassword -p 8787:8787 {DOCKERHUB_USERNAME}/repo2docker-{project_id}\n")
-        readme.write("```\n")
-        readme.write("Replace `yourpassword` with a secure password of your choice. You will use this to log in to the RStudio web interface.\n\n")
-        readme.write("**Once the container is running, visit `http://localhost:8787` in your browser.**\n")
-        readme.write("Use username: `rstudio` and the password you set with `-e PASSWORD=...`.\n")
 
+        readme.write("### Launch RStudio Server\n\n")
+        readme.write("Run the container (with a name, e.g. `rstudio-dev`):\n")
+        readme.write("```bash\n")
+        readme.write(f"docker run -it --name rstudio-dev --platform linux/amd64 -p 8888:8787 --user root {DOCKERHUB_USERNAME}/repo2docker-{project_id}-f bash\n")
+        readme.write("```\n\n")
+
+        readme.write("Inside the container, start RStudio Server with no authentication:\n")
+        readme.write("```bash\n")
+        readme.write("/usr/lib/rstudio-server/bin/rserver --www-port 8787 --auth-none=1\n")
+        readme.write("```\n\n")
+
+        readme.write("Then, open your browser and go to: [http://localhost:8888](http://localhost:8888)\n\n")
+
+        readme.write("> **Note:** If you're running the container on a remote server (e.g., via SSH), replace `localhost` with your server's IP address.\n")
+        readme.write("> For example: `http://<your-server-ip>:8888`\n\n")
 
     if add_github_repo:
         if not create_github_repo(repo_name, org="code-inspect-binder"):
@@ -145,9 +154,12 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
         log_message(project_id, "REPO2DOCKER SETUP", f"Initializing Git repository for {project_dir}...")
         
         try:
+            git_dir = os.path.join(project_dir, ".git")
+            if os.path.exists(git_dir):
+                shutil.rmtree(git_dir)
+
             repo = Repo.init(project_dir)
-            if "origin" not in [remote.name for remote in repo.remotes]:
-                repo.create_remote("origin", github_repo_url)
+            repo.create_remote("origin", github_repo_url)
 
             repo.git.add(all=True)
             repo.index.commit("Initial commit for repo2docker project")
@@ -155,6 +167,7 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
             repo.remotes.origin.push(refspec="main:main", force=True)
             log_message(project_id, "REPO2DOCKER SETUP", f"✅ Repo2docker files created and pushed to {github_repo_url}.")
             return True
+        
         except Exception as e:
             log_message(project_id, "REPO2DOCKER SETUP", f"❌ Error pushing to GitHub: {e}")
             return False

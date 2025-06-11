@@ -41,7 +41,7 @@ def run_flowr_dependency_query(project_path):
         return False
 
 
-def process_project(project_id):
+def process_project(project_id, flowr_enabled=False):
     """Processes a project with all necessary steps, including Docker Hub push."""
     start_time = time.time()
     log_message(project_id, "PROJECT INIT", f"🚀 Starting processing for project '{project_id}'")
@@ -69,7 +69,7 @@ def process_project(project_id):
 
         # Stage 3: Create Repository
         container_setup_start = time.time()
-        if not create_repo2docker_files(project_path, project_id):
+        if not create_repo2docker_files(project_path, project_id, flowr_enabled=flowr_enabled):
             log_message(project_id, "REPO2DOCKER SETUP", f"❌ Failed to create repo2docker files for project '{project_id}'.")
             return False
 
@@ -77,7 +77,7 @@ def process_project(project_id):
         log_message(project_id, "REPO2DOCKER SETUP", f"✅ Repo2Docker files created successfully in {container_setup_end - container_setup_start:.2f} seconds.")
 
         # Stage 4: Build, Run and Push Container
-        if not build_and_run(project_id, push=False, dockerhub_username=DOCKERHUB_USERNAME):
+        if not build_and_run(project_id, push=True, dockerhub_username=DOCKERHUB_USERNAME, flowr_enabled=flowr_enabled):
             return False
 
         # Stage 5: Execute R Scripts
@@ -99,6 +99,7 @@ def main():
     parser = argparse.ArgumentParser(description='Process OSF projects for reproducibility testing.')
     parser.add_argument('input', help='OSF project ID or file containing project IDs')
     parser.add_argument('--github', action='store_true', help='Create GitHub repositories for the projects')
+    parser.add_argument('--flowr', action='store_true', help='Enable flowR mode with extra setup')
     args = parser.parse_args()
 
     project_ids = []
@@ -110,7 +111,7 @@ def main():
 
     success_count = 0
     for project_id in project_ids:
-        if process_project(project_id):
+        if process_project(project_id, flowr_enabled=args.flowr):
             success_count += 1
 
     for project_id in project_ids:

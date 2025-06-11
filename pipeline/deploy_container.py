@@ -16,15 +16,15 @@ def check_project_exists(project_id):
     return project_path
 
 
-def get_image_and_container_name(project_id):
-    """Returns the image and container names for a project."""
-    image_name = f"repo2docker-{project_id}"
-    return image_name, image_name  # Using same name for both
+def get_image_and_container_name(project_id, flowr_enabled=False):
+    suffix = "-f" if flowr_enabled else ""
+    image_name = f"repo2docker-{project_id}{suffix}"
+    container_name = f"repo2docker-{project_id}{suffix}"
+    return image_name, container_name
 
-
-def build_docker_image(project_id, project_path):
+def build_docker_image(project_id, project_path, flowr_enabled=False):
     """Builds a Docker image for the project using repo2docker."""
-    image_name, _ = get_image_and_container_name(project_id)
+    image_name, _ = get_image_and_container_name(project_id, flowr_enabled)
 
     build_command = [
         "repo2docker",
@@ -57,8 +57,7 @@ def check_docker_daemon(project_id):
         log_message(project_id, "DOCKER CHECK", "❌ Docker daemon is not running. Please start Docker.")
         return False
 
-
-def push_image_to_dockerhub(project_id, push=True):
+def push_image_to_dockerhub(project_id, flowr_enabled=False, push=True):
     """Pushes the image to Docker Hub if push=True."""
     if not push:
         log_message(project_id, "DOCKER PUSH", f"ℹ️ Skipping Docker push as 'push' flag is False.")
@@ -67,8 +66,9 @@ def push_image_to_dockerhub(project_id, push=True):
     if not check_docker_daemon(project_id):
         return False
 
-    local_image = f"repo2docker-{project_id}"
-    remote_image = f"{DOCKERHUB_USERNAME}/repo2docker-{project_id}"
+    suffix = "-f" if flowr_enabled else ""
+    local_image = f"repo2docker-{project_id}{suffix}"
+    remote_image = f"{DOCKERHUB_USERNAME}/repo2docker-{project_id}{suffix}"
 
     log_message(project_id, "DOCKER PUSH", f"🔁 Attempting to push image to Docker Hub: {remote_image}")
 
@@ -83,7 +83,7 @@ def push_image_to_dockerhub(project_id, push=True):
         return False
 
 
-def build_image(project_id, push=False, dockerhub_username=None):
+def build_image(project_id, push=True, dockerhub_username=None, flowr_enabled=False):
     """Builds the docker image using repo2docker."""
     log_message(project_id, "CONTAINER BUILD", f"=== Building repository for project: {project_id} ===")
 
@@ -94,10 +94,10 @@ def build_image(project_id, push=False, dockerhub_username=None):
 
         log_message(project_id, "CONTAINER BUILD", f"📦 Building repository...")
 
-        image_name = build_docker_image(project_id, project_path)
+        image_name = build_docker_image(project_id, project_path, flowr_enabled)
         if image_name:
             if push and dockerhub_username:
-                push_image_to_dockerhub(project_id, dockerhub_username)
+                push_image_to_dockerhub(project_id, flowr_enabled, push=True)
             return True
         return False
     except Exception as e:
@@ -105,7 +105,7 @@ def build_image(project_id, push=False, dockerhub_username=None):
         return False
 
 
-def run_container(project_id):
+def run_container(project_id, flowr_enabled=False):
     """Runs the container for the project and logs R version and date to runtime.txt."""
     log_message(project_id, "CONTAINER RUN", f"=== Running container for project: {project_id} ===")
 
@@ -113,7 +113,7 @@ def run_container(project_id):
     if not project_path:
         return False
 
-    image_name, container_name = get_image_and_container_name(project_id)
+    image_name, container_name = get_image_and_container_name(project_id, flowr_enabled)
 
     try:
         subprocess.run(["docker", "rm", "-f", container_name], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -184,7 +184,7 @@ def run_container(project_id):
     return True
 
 
-def build_and_run(project_id, no_run=False, push=True, dockerhub_username=None):
+def build_and_run(project_id, no_run=False, push=True, dockerhub_username=None, flowr_enabled=False):
     """Processes a project."""
     log_message(project_id, "CONTAINER BUILD", f"=== 🚀 Processing Project: '{project_id}' ===")
 
@@ -192,7 +192,7 @@ def build_and_run(project_id, no_run=False, push=True, dockerhub_username=None):
         return False
 
     try:
-        if not build_image(project_id, push=push, dockerhub_username=dockerhub_username):
+        if not build_image(project_id, push=push, dockerhub_username=dockerhub_username, flowr_enabled=flowr_enabled):
             log_message(project_id, "CONTAINER BUILD", f"⚠️ Failed to build repository.")
             return False
 
@@ -201,7 +201,7 @@ def build_and_run(project_id, no_run=False, push=True, dockerhub_username=None):
         if no_run:
             return True
 
-        if not run_container(project_id):
+        if not run_container(project_id, flowr_enabled):
             log_message(project_id, "CONTAINER RUN", f"⚠️ Failed to run container.")
             return False
 
@@ -215,6 +215,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Build and Run Repo2Docker Containers")
     parser.add_argument("project_id", nargs="+", help="Single project ID or file containing multiple IDs")
     parser.add_argument("--no-run", action="store_true", help="Only build the image without running the container")
+    parser.add_argument("--flowr", action="store_true", help="Enable flowR configuration")
 
     args = parser.parse_args()
 
@@ -225,4 +226,4 @@ if __name__ == "__main__":
         project_ids = args.project_id
 
     for project_id in project_ids:
-        build_and_run(project_id, no_run=args.no_run, push=True)
+        build_and_run(project_id, no_run=args.no_run, push=True, flowr_enabled=args.flowr)

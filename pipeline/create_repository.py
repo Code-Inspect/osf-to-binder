@@ -48,9 +48,10 @@ def fetch_osf_metadata(project_id, retries=5, delay=5):
                 return f"osf_{project_id}", "This repository was automatically generated for use with repo2docker."
 
 
-def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
+def create_repo2docker_files(project_dir, project_id, add_github_repo=False, flowr_enabled=False):
     """Creates necessary repo2docker files in the project directory."""
-    repo_name = f"osf_{project_id}"
+    repo_suffix = "-f" if flowr_enabled else ""
+    repo_name = f"osf_{project_id}{repo_suffix}"
     dependencies_file = os.path.join(project_dir, "dependencies.txt")
 
     if not os.path.exists(dependencies_file):
@@ -107,6 +108,13 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
         readme.write(
             "The `DESCRIPTION` file was automatically added to make this project Binder-ready. For more information on how R-based OSF projects are containerized, please refer to the `osf-to-binder` GitHub repository: [https://github.com/Code-Inspect/osf-to-binder](https://github.com/Code-Inspect/osf-to-binder)\n\n"
         )
+
+        if flowr_enabled:
+            readme.write("## flowR Integration\n\n")
+            readme.write("This version of the repository has the **[flowR Addin](https://github.com/flowr-analysis/rstudio-addin-flowr)** preinstalled. ")
+            readme.write("flowR allows visual design and execution of data analysis workflows within RStudio, supporting better reproducibility and modular analysis pipelines.\n\n")
+            readme.write("To use flowR, open the project in RStudio and go to `Addins` > `flowR`.\n\n")
+
         readme.write("## How to Launch:\n\n")
         readme.write("**Launch in your Browser:**\n\n")
         readme.write(
@@ -126,14 +134,17 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
         readme.write("## Run via Docker for Long-Term Reproducibility\n\n")
         readme.write("In addition to launching this project using Binder or NFDI JupyterHub, you can reproduce the environment locally using Docker. This is especially useful for long-term access, offline use, or high-performance computing environments.\n\n")
         readme.write("### Pull the Docker Image\n\n")
+        suffix = "-f" if flowr_enabled else ""
         readme.write("```bash\n")
-        readme.write(f"docker pull {DOCKERHUB_USERNAME}/repo2docker-{project_id}-f:latest\n")
+        readme.write(f"docker pull {DOCKERHUB_USERNAME}/repo2docker-{project_id}{suffix}:latest\n")
         readme.write("```\n\n")
 
         readme.write("### Launch RStudio Server\n\n")
         readme.write("Run the container (with a name, e.g. `rstudio-dev`):\n")
+
+        suffix = "-f" if flowr_enabled else ""
         readme.write("```bash\n")
-        readme.write(f"docker run -it --name rstudio-dev --platform linux/amd64 -p 8888:8787 --user root {DOCKERHUB_USERNAME}/repo2docker-{project_id}-f bash\n")
+        readme.write(f"docker run -it --name rstudio-dev --platform linux/amd64 -p 8888:8787 --user root {DOCKERHUB_USERNAME}/repo2docker-{project_id}{suffix} bash\n")
         readme.write("```\n\n")
 
         readme.write("Inside the container, start RStudio Server with no authentication:\n")
@@ -145,6 +156,32 @@ def create_repo2docker_files(project_dir, project_id, add_github_repo=False):
 
         readme.write("> **Note:** If you're running the container on a remote server (e.g., via SSH), replace `localhost` with your server's IP address.\n")
         readme.write("> For example: `http://<your-server-ip>:8888`\n\n")
+
+        if flowr_enabled:
+            readme.write("## Looking for the Base Version?\n\n")
+            readme.write("For the original Binder-ready repository **without flowR**, visit:\n")
+            readme.write(f"[osf_{project_id}](https://github.com/code-inspect-binder/osf_{project_id})\n\n")
+
+    if flowr_enabled:
+        rprofile_path = os.path.join(project_dir, ".Rprofile")
+        with open(rprofile_path, "w", encoding="utf-8") as rprofile:
+            rprofile.write("""if (interactive() && Sys.getenv(\"RSTUDIO\") == \"1\") {
+    message(\"Scheduling flowR addin installation...\")
+    later::later(function() {
+        message(\"Installing flowR addin...\")
+        try(rstudioaddinflowr:::install_node_addin(), silent = FALSE)
+    }, delay = 2)
+}
+""")
+
+        postbuild_path = os.path.join(project_dir, "postBuild")
+        with open(postbuild_path, "w", encoding="utf-8") as postbuild:
+            postbuild.write("#!/bin/bash\n\n")
+            postbuild.write("echo \"Installing flowR addin...\"\n\n")
+            postbuild.write("Rscript -e \"install.packages('remotes', repos = 'https://cloud.r-project.org')\"\n\n")
+            postbuild.write("Rscript -e \"if (Sys.getenv('GITHUB_ACCESS_TOKEN') != '') Sys.setenv(GITHUB_PAT = Sys.getenv('GITHUB_ACCESS_TOKEN')); remotes::install_github('flowr-analysis/rstudio-addin-flowr@v0.1.2')\"\n")
+
+        os.chmod(postbuild_path, 0o775)
 
     if add_github_repo:
         if not create_github_repo(repo_name, org="code-inspect-binder"):

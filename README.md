@@ -61,15 +61,7 @@ The tool will:
 
 ## Optional: FlowR-Enabled Repositories
 
-By default, the pipeline builds standard Binder-ready repositories as described earlier.  
-However, if your OSF project requires additional dependency extraction or benefits from FlowR-specific features (e.g., RStudio addin setup), you can **optionally enable FlowR support**.
-
-When enabled, the pipeline will:
-
-- Create a modified version of the repository with a `-f` suffix (e.g., `osf_<project_id>-f/`)
-- Installs the FlowR addin automatically in interactive RStudio sessions
-- Name Docker image and container as `repo2docker-<project_id>-f`
-- Push the image to DockerHub under the same `-f` suffix
+This version of the repository has the **[flowR Addin](https://github.com/flowr-analysis/rstudio-addin-flowr)** preinstalled. flowR allows visual design and execution of data analysis workflows within RStudio, supporting better reproducibility and modular analysis pipelines.
 
 ### How to Enable FlowR
 
@@ -82,6 +74,13 @@ uv run pipeline/run.py <project_id> --flowr
 
 uv run pipeline/run.py metadata/project_ids.txt --flowr
 ```
+
+When enabled, the pipeline will:
+
+- Create a modified version of the repository with a `-f` suffix (e.g., `osf_<project_id>-f/`)
+- Installs the flowR addin automatically in interactive RStudio sessions
+- Name Docker image and container as `repo2docker-<project_id>-f`
+- Push the image to DockerHub under the same `-f` suffix
 
 ---
 

@@ -1,6 +1,6 @@
 # OSF-to-Binder
 
-OSF-to-Binder is a tool for automatically building reproducible repositories from source-code of scientific publications. It automatically analyzes the code, adds dependencies, builds a binder-ready repository and executes the code in the project.
+OSF-to-Binder is a tool for automatically building reproducible repositories from the source code of scientific publications. It analyzes the code, adds dependencies, builds a Binder-ready repository, and executes the code in the project. Detailed results of running the tool are available in the [code-inspect-binder](https://github.com/code-inspect-binder) organization.
 
 ## Project Structure
 

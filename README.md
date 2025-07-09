@@ -56,6 +56,7 @@ The tool will:
 - Extract dependencies from R scripts using `flowR`
 - Create a docker container using `repo2docker`
 - Build and run Docker containers
+- Set the working directory to the script’s folder before execution
 - Execute R scripts in the container
 - Log all operations and results
 
